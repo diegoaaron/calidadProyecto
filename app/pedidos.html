@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TechStore | Mis pedidos</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-page="pedidos">
+  <header id="site-header" class="site-header"></header>
+
+  <main>
+    <h1>Mis pedidos</h1>
+    <div id="content"></div>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/catalog.js"></script>
+  <script src="js/checkout.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/orders-view.js"></script>
+  <script>
+    UI.init({ active: 'pedidos', protected: true });
+    if (UI.requireAuth()) {
+      var orders = Checkout.getOrders();
+      var c = document.getElementById('content');
+      if (!orders.length) {
+        c.innerHTML = '<div class="empty card" data-testid="no-orders"><div class="icon">📦</div><h2>Aún no tienes pedidos</h2>' +
+          '<p class="muted">Cuando completes una compra aparecerá aquí.</p><a class="btn btn-primary" href="index.html">Ir al catálogo</a></div>';
+      } else {
+        c.innerHTML = orders.map(function (o) {
+          var units = o.items.reduce(function (s, it) { return s + it.qty; }, 0);
+          return '<details class="card order" data-testid="order">' +
+            '<summary class="order-head"><span><strong data-testid="order-id">' + UI.esc(o.id) + '</strong> · ' + OrderView.fmtDate(o.date) +
+            ' · ' + units + ' producto(s)</span><span><span class="status">' + UI.esc(o.status) + '</span> <strong>' + UI.money(o.totals.total) + '</strong></span></summary>' +
+            OrderView.detail(o) + '</details>';
+        }).join('');
+      }
+    }
+  </script>
+</body>
+</html>

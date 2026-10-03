@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TechStore | Mi perfil</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-page="perfil">
+  <header id="site-header" class="site-header"></header>
+
+  <main>
+    <h1>Mi perfil</h1>
+    <div class="two-col">
+      <section class="card">
+        <h2>Datos personales</h2>
+        <form id="profile-form" novalidate data-testid="profile-form">
+          <div class="field"><label for="p-name">Nombre completo</label><input id="p-name" name="name" data-testid="profile-name"><div class="field-error" data-error-for="name"></div></div>
+          <div class="field"><label for="p-email">Correo electrónico</label><input id="p-email" name="email" disabled data-testid="profile-email">
+            <div class="field-hint">El correo identifica tu cuenta y no se puede modificar.</div></div>
+          <div class="field"><label for="p-phone">Celular</label><input id="p-phone" name="phone" inputmode="numeric" maxlength="9" data-testid="profile-phone"><div class="field-error" data-error-for="phone"></div></div>
+          <p class="muted small" id="consent-info"></p>
+          <button class="btn btn-primary" type="submit" data-testid="profile-save">Guardar cambios</button>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Mis direcciones</h2>
+        <div class="address-list" id="addresses" data-testid="address-list"></div>
+        <details id="addr-details">
+          <summary class="btn btn-outline btn-small" data-testid="add-address">+ Agregar / editar dirección</summary>
+          <form id="address-form" novalidate style="margin-top:12px" data-testid="address-form">
+            <input type="hidden" name="addrId">
+            <div class="form-grid">
+              <div class="field"><label for="a-alias">Alias</label><input id="a-alias" name="alias" placeholder="Casa, Oficina..."></div>
+              <div class="field"><label for="a-fullName">Nombre de quien recibe</label><input id="a-fullName" name="fullName"><div class="field-error" data-error-for="fullName"></div></div>
+              <div class="field"><label for="a-phone">Celular</label><input id="a-phone" name="phone" inputmode="numeric" maxlength="9"><div class="field-error" data-error-for="phone"></div></div>
+              <div class="field"><label for="a-department">Departamento</label><select id="a-department" name="department"></select><div class="field-error" data-error-for="department"></div></div>
+              <div class="field"><label for="a-district">Distrito</label><input id="a-district" name="district"><div class="field-error" data-error-for="district"></div></div>
+              <div class="field"><label for="a-street">Dirección</label><input id="a-street" name="street"><div class="field-error" data-error-for="street"></div></div>
+              <div class="field full"><label for="a-reference">Referencia</label><input id="a-reference" name="reference"></div>
+            </div>
+            <button class="btn btn-primary" type="submit" data-testid="address-save">Guardar dirección</button>
+          </form>
+        </details>
+      </section>
+    </div>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/catalog.js"></script>
+  <script src="js/ui.js"></script>
+  <script>
+    UI.init({ active: 'perfil', protected: true });
+    var pf = document.getElementById('profile-form');
+    var af = document.getElementById('address-form');
+    af.department.innerHTML = '<option value="">Selecciona...</option>' + TS_DATA.departments.map(function (d) { return '<option>' + d + '</option>'; }).join('');
+
+    function render() {
+      var u = Auth.currentUser();
+      if (!u) return;
+      pf.name.value = u.name; pf.email.value = u.email; pf.phone.value = u.phone || '';
+      document.getElementById('consent-info').textContent = 'Aceptaste la Política de Privacidad el ' + new Date(u.consentDate).toLocaleDateString('es-PE') + '.';
+      var box = document.getElementById('addresses');
+      box.innerHTML = u.addresses.length ? u.addresses.map(function (a) {
+        return '<div class="address" data-testid="address" data-id="' + a.id + '"><div><strong>' + UI.esc(a.alias) + '</strong> · ' + UI.esc(a.fullName) +
+          '<br><span class="muted small">' + UI.esc(a.street) + ', ' + UI.esc(a.district) + ', ' + UI.esc(a.department) + ' · ' + UI.esc(a.phone) + '</span></div>' +
+          '<div><button type="button" class="btn btn-small btn-outline edit">Editar</button> <button type="button" class="btn btn-small btn-danger del" data-testid="delete-address">Eliminar</button></div></div>';
+      }).join('') : '<p class="muted" data-testid="no-addresses">No tienes direcciones guardadas.</p>';
+    }
+
+    pf.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var r = Auth.updateProfile({ name: pf.name.value, phone: pf.phone.value });
+      if (r.ok) { UI.showErrors(pf, {}); UI.toast('Datos actualizados correctamente.', 'success'); UI.renderHeader('perfil'); render(); }
+      else if (r.errors) UI.showErrors(pf, r.errors);
+      else UI.toast(r.error, 'error');
+    });
+
+    af.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var a = { id: af.addrId.value };
+      ['alias', 'fullName', 'phone', 'department', 'district', 'street', 'reference'].forEach(function (k) { a[k] = af[k].value; });
+      var r = Auth.saveAddress(a);
+      if (r.ok) { UI.showErrors(af, {}); af.reset(); af.addrId.value = ''; document.getElementById('addr-details').open = false; UI.toast('Dirección guardada.', 'success'); render(); }
+      else if (r.errors) UI.showErrors(af, r.errors);
+      else UI.toast(r.error, 'error');
+    });
+
+    document.getElementById('addresses').addEventListener('click', function (e) {
+      var el = e.target.closest('.address');
+      if (!el) return;
+      var id = el.getAttribute('data-id');
+      if (e.target.classList.contains('del')) {
+        if (confirm('¿Eliminar esta dirección?')) { Auth.deleteAddress(id); UI.toast('Dirección eliminada.', 'success'); render(); }
+      } else if (e.target.classList.contains('edit')) {
+        Auth.currentUser().addresses.forEach(function (a) {
+          if (a.id === id) { af.addrId.value = a.id; ['alias', 'fullName', 'phone', 'department', 'district', 'street', 'reference'].forEach(function (k) { af[k].value = a[k] || ''; }); }
+        });
+        document.getElementById('addr-details').open = true;
+        af.alias.focus();
+      }
+    });
+
+    if (UI.requireAuth()) render();
+  </script>
+</body>
+</html>

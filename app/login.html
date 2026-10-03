@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TechStore | Iniciar sesión</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-page="login">
+  <header id="site-header" class="site-header"></header>
+
+  <main>
+    <div class="card narrow">
+      <h1>Iniciar sesión</h1>
+      <div id="alert"></div>
+      <form id="login-form" novalidate data-testid="login-form">
+        <div class="field">
+          <label for="email">Correo electrónico</label>
+          <input id="email" name="email" type="email" autocomplete="username" required data-testid="login-email">
+        </div>
+        <div class="field">
+          <label for="password">Contraseña</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required data-testid="login-password">
+          <label class="checkbox small" style="margin-top:6px"><input type="checkbox" id="show-pwd"> Mostrar contraseña</label>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" data-testid="login-submit">Ingresar</button>
+      </form>
+      <p class="muted" style="margin-top:16px">¿No tienes cuenta? <a id="register-link" href="registro.html" data-testid="go-register">Crea una aquí</a></p>
+    </div>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/catalog.js"></script>
+  <script src="js/ui.js"></script>
+  <script>
+    UI.init({ active: 'login' });
+    var next = UI.qs('next') || 'index.html';
+    if (!/^[a-z]+\.html/.test(next)) next = 'index.html'; // evita redirecciones externas
+    document.getElementById('register-link').href = 'registro.html?next=' + encodeURIComponent(next);
+
+    var alertBox = document.getElementById('alert');
+    if (UI.qs('expired')) alertBox.innerHTML = '<div class="alert alert-warn" data-testid="session-expired">Tu sesión se cerró por inactividad (15 minutos). Vuelve a iniciar sesión.</div>';
+    else if (UI.qs('auth')) alertBox.innerHTML = '<div class="alert alert-info" data-testid="auth-required">Inicia sesión para continuar.</div>';
+
+    if (Auth.currentUser()) window.location.href = next;
+
+    document.getElementById('show-pwd').addEventListener('change', function (e) {
+      document.getElementById('password').type = e.target.checked ? 'text' : 'password';
+    });
+
+    document.getElementById('login-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var r = Auth.login(this.email.value, this.password.value);
+      if (r.ok) {
+        UI.toast('¡Bienvenido, ' + r.user.name + '!', 'success');
+        window.location.href = next;
+      } else {
+        alertBox.innerHTML = '<div class="alert alert-error" role="alert" data-testid="login-error">' + UI.esc(r.error) + '</div>';
+        this.password.value = '';
+        this.password.focus();
+      }
+    });
+  </script>
+</body>
+</html>

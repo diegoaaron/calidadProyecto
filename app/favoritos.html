@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TechStore | Favoritos</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-page="favoritos">
+  <header id="site-header" class="site-header"></header>
+
+  <main>
+    <h1>Mis favoritos</h1>
+    <div id="content"></div>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/catalog.js"></script>
+  <script src="js/ui.js"></script>
+  <script>
+    UI.init({ active: 'favoritos', protected: true });
+    var c = document.getElementById('content');
+
+    function render() {
+      var ids = Catalog.getWishlist();
+      if (!ids.length) {
+        c.innerHTML = '<div class="empty card" data-testid="empty-wishlist"><div class="icon">♡</div><h2>Tu lista de favoritos está vacía</h2>' +
+          '<p class="muted">Toca el corazón de un producto para guardarlo aquí.</p><a class="btn btn-primary" href="index.html">Explorar productos</a></div>';
+        return;
+      }
+      c.innerHTML = '<div class="grid">' + ids.map(function (id) {
+        var p = Store.getProduct(id);
+        if (!p) return '';
+        var st = Catalog.stockStatus(p);
+        return '<article class="product-card" data-testid="wishlist-item" data-id="' + p.id + '">' +
+          '<a href="producto.html?id=' + p.id + '"><img src="' + UI.productImage(p) + '" alt="' + UI.esc(p.name) + '"></a>' +
+          '<div class="body"><a class="title" href="producto.html?id=' + p.id + '">' + UI.esc(p.name) + '</a>' +
+          '<div class="price">' + UI.money(p.price) + '</div><div class="stock stock-' + st.code + '">' + st.label + '</div>' +
+          '<div class="card-actions"><button type="button" class="btn btn-primary btn-small add-btn" ' + (p.stock <= 0 ? 'disabled' : '') + ' data-testid="add-to-cart">' +
+          (p.stock <= 0 ? 'Agotado' : 'Mover al carrito') + '</button>' +
+          '<button type="button" class="btn btn-danger btn-small rm-btn" data-testid="remove-favorite">Quitar</button></div></div></article>';
+      }).join('') + '</div>';
+    }
+
+    c.addEventListener('click', function (e) {
+      var card = e.target.closest('.product-card');
+      if (!card) return;
+      var id = card.getAttribute('data-id');
+      if (e.target.closest('.add-btn')) {
+        var r = Cart.add(id, 1);
+        if (r.ok) { Catalog.toggleFavorite(id); UI.toast('Producto movido al carrito.', 'success'); UI.updateCartCount(); render(); }
+        else UI.toast(r.error, 'error');
+      } else if (e.target.closest('.rm-btn')) {
+        Catalog.toggleFavorite(id); UI.toast('Eliminado de favoritos.', 'success'); render();
+      }
+    });
+
+    if (UI.requireAuth()) render();
+  </script>
+</body>
+</html>

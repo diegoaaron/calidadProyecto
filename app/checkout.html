@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TechStore | Checkout</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-page="checkout">
+  <header id="site-header" class="site-header"></header>
+
+  <main>
+    <h1>Finalizar compra</h1>
+    <ol class="steps" id="steps" data-testid="checkout-steps">
+      <li data-step="1">Dirección</li>
+      <li data-step="2">Envío</li>
+      <li data-step="3">Pago</li>
+      <li data-step="4">Confirmación</li>
+    </ol>
+
+    <div class="cart-layout">
+      <section class="card">
+        <div id="alert"></div>
+
+        <!-- Paso 1: Dirección -->
+        <form class="step-panel" data-panel="1" id="address-form" novalidate data-testid="step-address">
+          <h2>Dirección de envío</h2>
+          <div class="address-list" id="saved-addresses"></div>
+          <div id="new-address">
+            <div class="form-grid">
+              <div class="field"><label for="a-fullName">Nombre de quien recibe</label><input id="a-fullName" name="fullName" data-testid="address-fullname"><div class="field-error" data-error-for="fullName"></div></div>
+              <div class="field"><label for="a-phone">Celular</label><input id="a-phone" name="phone" inputmode="numeric" maxlength="9" placeholder="9XXXXXXXX" data-testid="address-phone"><div class="field-error" data-error-for="phone"></div></div>
+              <div class="field"><label for="a-department">Departamento</label><select id="a-department" name="department" data-testid="address-department"></select><div class="field-error" data-error-for="department"></div></div>
+              <div class="field"><label for="a-district">Distrito</label><input id="a-district" name="district" data-testid="address-district"><div class="field-error" data-error-for="district"></div></div>
+              <div class="field full"><label for="a-street">Dirección (calle, número, dpto.)</label><input id="a-street" name="street" data-testid="address-street"><div class="field-error" data-error-for="street"></div></div>
+              <div class="field full"><label for="a-reference">Referencia (opcional)</label><input id="a-reference" name="reference" data-testid="address-reference"></div>
+              <label class="checkbox full"><input type="checkbox" id="save-address" checked data-testid="save-address"> Guardar esta dirección en mi perfil</label>
+            </div>
+          </div>
+          <div class="step-actions"><a href="carrito.html" class="btn btn-outline">← Volver al carrito</a>
+            <button type="submit" class="btn btn-primary" data-testid="address-next">Continuar</button></div>
+        </form>
+
+        <!-- Paso 2: Envío -->
+        <form class="step-panel" data-panel="2" id="shipping-form" hidden data-testid="step-shipping">
+          <h2>Método de envío</h2>
+          <div id="shipping-options"></div>
+          <div class="field-error" id="shipping-error"></div>
+          <div class="step-actions"><button type="button" class="btn btn-outline back">← Atrás</button>
+            <button type="submit" class="btn btn-primary" data-testid="shipping-next">Continuar</button></div>
+        </form>
+
+        <!-- Paso 3: Pago -->
+        <form class="step-panel" data-panel="3" id="payment-form" novalidate hidden data-testid="step-payment">
+          <h2>Método de pago</h2>
+          <div class="alert alert-info small">Pago <strong>simulado</strong>: no se realiza ningún cargo. Usa la tarjeta de prueba 4111 1111 1111 1111.</div>
+          <label class="option"><input type="radio" name="method" value="card" checked data-testid="pay-card">
+            <span><strong>Tarjeta de crédito o débito</strong><br><span class="muted small">Visa, Mastercard, American Express</span></span></label>
+          <div id="card-fields" class="form-grid">
+            <div class="field full"><label for="c-number">Número de tarjeta</label><input id="c-number" name="number" inputmode="numeric" autocomplete="cc-number" placeholder="0000 0000 0000 0000" maxlength="23" data-testid="card-number"><div class="field-error" data-error-for="number"></div></div>
+            <div class="field full"><label for="c-holder">Nombre del titular</label><input id="c-holder" name="holder" autocomplete="cc-name" data-testid="card-holder"><div class="field-error" data-error-for="holder"></div></div>
+            <div class="field"><label for="c-expiry">Vencimiento (MM/AA)</label><input id="c-expiry" name="expiry" placeholder="MM/AA" maxlength="5" autocomplete="cc-exp" data-testid="card-expiry"><div class="field-error" data-error-for="expiry"></div></div>
+            <div class="field"><label for="c-cvv">CVV</label><input id="c-cvv" name="cvv" inputmode="numeric" maxlength="4" autocomplete="cc-csc" type="password" data-testid="card-cvv"><div class="field-error" data-error-for="cvv"></div></div>
+          </div>
+          <label class="option"><input type="radio" name="method" value="contraentrega" data-testid="pay-cod">
+            <span><strong>Pago contra entrega</strong><br><span class="muted small">Pagas en efectivo o POS al recibir tu pedido</span></span></label>
+          <div class="step-actions"><button type="button" class="btn btn-outline back">← Atrás</button>
+            <button type="submit" class="btn btn-primary" data-testid="payment-next">Revisar pedido</button></div>
+        </form>
+
+        <!-- Paso 4: Resumen -->
+        <div class="step-panel" data-panel="4" hidden data-testid="step-review">
+          <h2>Revisa tu pedido</h2>
+          <div id="review"></div>
+          <label class="checkbox" style="margin:12px 0"><input type="checkbox" id="accept-terms" data-testid="accept-terms"> Acepto los términos y condiciones de compra.</label>
+          <div class="field-error" id="terms-error" data-testid="terms-error"></div>
+          <div class="step-actions"><button type="button" class="btn btn-outline back">← Atrás</button>
+            <button type="button" class="btn btn-accent" id="confirm" data-testid="confirm-order">Confirmar y pagar</button></div>
+        </div>
+      </section>
+
+      <aside class="card summary" aria-label="Resumen del pedido" data-testid="checkout-summary">
+        <h2>Tu pedido</h2>
+        <div id="summary"></div>
+      </aside>
+    </div>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/catalog.js"></script>
+  <script src="js/checkout.js"></script>
+  <script src="js/ui.js"></script>
+  <script>
+    UI.init({ active: 'carrito', protected: true });
+    var user = UI.requireAuth();
+    if (user && !Cart.count()) window.location.href = 'carrito.html';
+
+    var order = { address: null, shippingMethod: null, payment: null };
+    var step = 1;
+
+    function setStep(n) {
+      step = n;
+      Array.prototype.forEach.call(document.querySelectorAll('.step-panel'), function (p) { p.hidden = Number(p.getAttribute('data-panel')) !== n; });
+      Array.prototype.forEach.call(document.querySelectorAll('#steps li'), function (li) {
+        var s = Number(li.getAttribute('data-step'));
+        li.className = s === n ? 'current' : (s < n ? 'done' : '');
+        if (s === n) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current');
+      });
+      document.getElementById('alert').innerHTML = '';
+      if (n === 4) renderReview();
+      renderSummary();
+      window.scrollTo(0, 0);
+    }
+
+    function renderSummary() {
+      var t = Cart.totals(order.shippingMethod);
+      var items = Cart.getItems();
+      document.getElementById('summary').innerHTML =
+        '<ul class="mini-items">' + items.map(function (it) {
+          return '<li><span>' + it.qty + ' × ' + UI.esc(it.name) + '</span><span>' + UI.money(it.lineTotal) + '</span></li>';
+        }).join('') + '</ul>' +
+        '<div class="row"><span>Subtotal</span><span>' + UI.money(t.subtotal) + '</span></div>' +
+        (t.discount ? '<div class="row discount"><span>Cupón ' + UI.esc(t.coupon) + '</span><span>− ' + UI.money(t.discount) + '</span></div>' : '') +
+        '<div class="row"><span>Envío</span><span data-testid="summary-shipping">' + (order.shippingMethod ? (t.shipping ? UI.money(t.shipping) : 'Gratis') : 'Por definir') + '</span></div>' +
+        '<div class="row total"><span>Total</span><span data-testid="summary-total">' + UI.money(t.total) + '</span></div>' +
+        '<div class="row muted small"><span>Incluye IGV (18 %)</span><span>' + UI.money(t.igv) + '</span></div>';
+    }
+
+    // ---- Paso 1 ----
+    var depSel = document.getElementById('a-department');
+    depSel.innerHTML = '<option value="">Selecciona...</option>' + TS_DATA.departments.map(function (d) { return '<option>' + d + '</option>'; }).join('');
+
+    function renderAddresses() {
+      var u = Auth.currentUser();
+      var box = document.getElementById('saved-addresses');
+      var list = (u && u.addresses) || [];
+      if (!list.length) { box.innerHTML = ''; document.getElementById('new-address').hidden = false; return; }
+      box.innerHTML = list.map(function (a, i) {
+        return '<label class="option"><input type="radio" name="addr" value="' + a.id + '" ' + (i === 0 ? 'checked' : '') + ' data-testid="saved-address">' +
+          '<span><strong>' + UI.esc(a.alias) + '</strong> · ' + UI.esc(a.fullName) + '<br><span class="muted small">' + UI.esc(a.street) + ', ' +
+          UI.esc(a.district) + ', ' + UI.esc(a.department) + ' · ' + UI.esc(a.phone) + '</span></span></label>';
+      }).join('') + '<label class="option"><input type="radio" name="addr" value="new" data-testid="new-address-option"><span><strong>Usar una nueva dirección</strong></span></label>';
+      toggleNew();
+      Array.prototype.forEach.call(box.querySelectorAll('input[name=addr]'), function (r) { r.addEventListener('change', toggleNew); });
+    }
+    function toggleNew() {
+      var sel = document.querySelector('input[name=addr]:checked');
+      document.getElementById('new-address').hidden = !!sel && sel.value !== 'new';
+    }
+
+    document.getElementById('address-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var f = this;
+      var sel = document.querySelector('input[name=addr]:checked');
+      if (sel && sel.value !== 'new') {
+        Auth.currentUser().addresses.forEach(function (a) { if (a.id === sel.value) order.address = a; });
+        setStep(2); return;
+      }
+      var a = { alias: 'Dirección ' + new Date().toLocaleDateString('es-PE'), fullName: f.fullName.value, phone: f.phone.value,
+        department: f.department.value, district: f.district.value, street: f.street.value, reference: f.reference.value };
+      var v = Auth.validateAddress(a);
+      if (!v.ok) { UI.showErrors(f, v.errors); return; }
+      UI.showErrors(f, {});
+      if (document.getElementById('save-address').checked) {
+        var r = Auth.saveAddress(a);
+        if (r.ok) a = r.address;
+      }
+      order.address = a;
+      setStep(2);
+    });
+
+    // ---- Paso 2 ----
+    function renderShipping() {
+      var sub = Cart.totals().total;
+      document.getElementById('shipping-options').innerHTML = TS_DATA.shippingMethods.map(function (m) {
+        var cost = Cart.shippingCost(m.id, sub);
+        return '<label class="option"><input type="radio" name="ship" value="' + m.id + '" data-testid="shipping-' + m.id + '">' +
+          '<span><strong>' + m.name + '</strong> — ' + (cost ? UI.money(cost) : 'Gratis') + '<br><span class="muted small">' + m.days +
+          (m.freeFrom ? ' · Gratis por compras desde ' + UI.money(m.freeFrom) : '') + '</span></span></label>';
+      }).join('');
+      Array.prototype.forEach.call(document.querySelectorAll('input[name=ship]'), function (r) {
+        r.addEventListener('change', function () { order.shippingMethod = r.value; renderSummary(); });
+      });
+    }
+    document.getElementById('shipping-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var sel = document.querySelector('input[name=ship]:checked');
+      if (!sel) { document.getElementById('shipping-error').textContent = 'Selecciona un método de envío.'; return; }
+      document.getElementById('shipping-error').textContent = '';
+      order.shippingMethod = sel.value;
+      setStep(3);
+    });
+
+    // ---- Paso 3 ----
+    var pf = document.getElementById('payment-form');
+    function togglePay() { document.getElementById('card-fields').hidden = pf.method.value !== 'card'; }
+    Array.prototype.forEach.call(pf.querySelectorAll('input[name=method]'), function (r) { r.addEventListener('change', togglePay); });
+    document.getElementById('c-number').addEventListener('input', function (e) {
+      e.target.value = e.target.value.replace(/\D/g, '').slice(0, 19).replace(/(\d{4})(?=\d)/g, '$1 ');
+    });
+    document.getElementById('c-expiry').addEventListener('input', function (e) {
+      var d = e.target.value.replace(/\D/g, '').slice(0, 4);
+      e.target.value = d.length > 2 ? d.slice(0, 2) + '/' + d.slice(2) : d;
+    });
+    pf.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (pf.method.value === 'card') {
+        var card = { number: pf.number.value, holder: pf.holder.value, expiry: pf.expiry.value, cvv: pf.cvv.value };
+        var v = Checkout.validateCard(card);
+        if (!v.ok) { UI.showErrors(pf, v.errors); return; }
+        UI.showErrors(pf, {});
+        order.payment = { method: 'card', card: card };
+      } else {
+        order.payment = { method: 'contraentrega' };
+      }
+      setStep(4);
+    });
+
+    // ---- Paso 4 ----
+    function renderReview() {
+      var a = order.address;
+      var m = null; TS_DATA.shippingMethods.forEach(function (x) { if (x.id === order.shippingMethod) m = x; });
+      var pay = order.payment.method === 'card'
+        ? Checkout.cardBrand(order.payment.card.number) + ' terminada en ' + order.payment.card.number.replace(/\D/g, '').slice(-4)
+        : 'Pago contra entrega';
+      document.getElementById('review').innerHTML =
+        '<table class="items" data-testid="review-items"><thead><tr><th>Producto</th><th class="num">Cant.</th><th class="num">Precio</th><th class="num">Total</th></tr></thead><tbody>' +
+        Cart.getItems().map(function (it) {
+          return '<tr><td>' + UI.esc(it.name) + '</td><td class="num">' + it.qty + '</td><td class="num">' + UI.money(it.price) + '</td><td class="num">' + UI.money(it.lineTotal) + '</td></tr>';
+        }).join('') + '</tbody></table>' +
+        '<p><strong>Enviar a:</strong> ' + UI.esc(a.fullName) + ' · ' + UI.esc(a.street) + ', ' + UI.esc(a.district) + ', ' + UI.esc(a.department) + ' · ' + UI.esc(a.phone) +
+          ' <button type="button" class="link-btn" style="color:var(--primary)" data-goto="1">Cambiar</button></p>' +
+        '<p><strong>Envío:</strong> ' + m.name + ' (' + m.days + ') <button type="button" class="link-btn" style="color:var(--primary)" data-goto="2">Cambiar</button></p>' +
+        '<p><strong>Pago:</strong> ' + UI.esc(pay) + ' <button type="button" class="link-btn" style="color:var(--primary)" data-goto="3">Cambiar</button></p>';
+    }
+    document.getElementById('review').addEventListener('click', function (e) {
+      var g = e.target.getAttribute('data-goto');
+      if (g) setStep(Number(g));
+    });
+
+    document.getElementById('confirm').addEventListener('click', function () {
+      if (!document.getElementById('accept-terms').checked) {
+        document.getElementById('terms-error').textContent = 'Debes aceptar los términos y condiciones para continuar.'; return;
+      }
+      document.getElementById('terms-error').textContent = '';
+      var btn = this;
+      btn.disabled = true; btn.textContent = 'Procesando pago...';
+      setTimeout(function () {
+        var r = Checkout.placeOrder(order);
+        if (r.ok) { window.location.href = 'confirmacion.html?id=' + encodeURIComponent(r.order.id); return; }
+        btn.disabled = false; btn.textContent = 'Confirmar y pagar';
+        if (!Auth.currentUser()) { window.location.href = 'login.html?expired=1&next=checkout.html'; return; }
+        document.getElementById('alert').innerHTML = '<div class="alert alert-error" role="alert" data-testid="order-error">' + UI.esc(r.error) + '</div>';
+      }, 900);
+    });
+
+    Array.prototype.forEach.call(document.querySelectorAll('.back'), function (b) {
+      b.addEventListener('click', function () { setStep(step - 1); });
+    });
+
+    if (user) { renderAddresses(); renderShipping(); setStep(1); }
+  </script>
+</body>
+</html>
