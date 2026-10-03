@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TechStore | Pruebas unitarias</title>
+  <style>
+    body { font-family: system-ui, Segoe UI, Arial, sans-serif; margin: 0; padding: 24px 16px; background: #f5f6fa; color: #1f2430; }
+    h1 { margin-top: 0; }
+    .summary { padding: 12px 16px; border-radius: 8px; font-weight: 700; margin-bottom: 16px; }
+    .ok { background: #e6f6ec; color: #1e8e4e; }
+    .fail { background: #fdecec; color: #c92a2a; }
+    section { background: #fff; border: 1px solid #dfe2ea; border-radius: 8px; padding: 12px 16px; margin-bottom: 12px; }
+    h2 { font-size: 1.05rem; margin: 0 0 8px; }
+    li { margin: 3px 0; }
+    .pass::marker { content: "✔ "; color: #1e8e4e; }
+    .err::marker { content: "✘ "; color: #c92a2a; }
+    .err { color: #c92a2a; }
+    code { background: #eef0f6; padding: 1px 4px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Pruebas unitarias – TechStore</h1>
+  <p>Se ejecutan sobre la lógica de negocio (<code>cart.js</code>, <code>auth.js</code>, <code>checkout.js</code>, <code>catalog.js</code>) usando un almacenamiento en memoria, sin afectar los datos de la tienda.</p>
+  <div id="summary" class="summary"></div>
+  <div id="results"></div>
+
+  <script src="../js/data.js"></script>
+  <script src="../js/store.js"></script>
+  <script src="../js/auth.js"></script>
+  <script src="../js/cart.js"></script>
+  <script src="../js/catalog.js"></script>
+  <script src="../js/checkout.js"></script>
+  <script>
+    // ---- Mini framework de pruebas ----
+    var suites = [], current = null;
+    function describe(name, fn) { current = { name: name, tests: [] }; suites.push(current); fn(); }
+    function it(name, fn) { current.tests.push({ name: name, fn: fn }); }
+    function expect(actual) {
+      return {
+        toBe: function (exp) { if (actual !== exp) throw new Error('Esperado ' + JSON.stringify(exp) + ', obtenido ' + JSON.stringify(actual)); },
+        toEqual: function (exp) { if (JSON.stringify(actual) !== JSON.stringify(exp)) throw new Error('Esperado ' + JSON.stringify(exp) + ', obtenido ' + JSON.stringify(actual)); },
+        toBeTruthy: function () { if (!actual) throw new Error('Esperado valor verdadero, obtenido ' + JSON.stringify(actual)); },
+        toBeFalsy: function () { if (actual) throw new Error('Esperado valor falso, obtenido ' + JSON.stringify(actual)); },
+        toContain: function (s) { if (String(actual).indexOf(s) === -1) throw new Error('"' + actual + '" no contiene "' + s + '"'); }
+      };
+    }
+    function fresh() { Store.useMemory(); Store.reset(); }
+    function loginDemo() { return Auth.login('demo@techstore.pe', 'Demo@1234'); }
+    var VALID_ADDRESS = { fullName: 'Ana Pérez', phone: '912345678', department: 'Lima', district: 'Surco', street: 'Av. Primavera 123' };
+    var VALID_CARD = { number: '4111 1111 1111 1111', holder: 'Ana Perez', expiry: '12/30', cvv: '123' };
+
+    // ---- Catálogo ----
+    describe('Catálogo (HU01–HU08)', function () {
+      it('lista los 24 productos del catálogo', function () { fresh(); expect(Catalog.query({}).length).toBe(24); });
+      it('busca por nombre sin distinguir mayúsculas ni tildes', function () {
+        fresh(); expect(Catalog.query({ q: 'IPHONE' }).length).toBe(1);
+        expect(Catalog.query({ q: 'audifonos' }).length).toBe(3);
+      });
+      it('búsqueda sin coincidencias devuelve lista vacía', function () { fresh(); expect(Catalog.query({ q: 'refrigeradora' }).length).toBe(0); });
+      it('filtra por categoría', function () {
+        fresh(); var l = Catalog.query({ category: 'laptops' });
+        expect(l.length).toBe(4); expect(l.every(function (p) { return p.category === 'laptops'; })).toBe(true);
+      });
+      it('filtra por rango de precio y marca', function () {
+        fresh(); var l = Catalog.query({ minPrice: 1000, maxPrice: 2000, brands: ['Samsung'] });
+        expect(l.map(function (p) { return p.id; })).toEqual(['P005', 'P010']);
+      });
+      it('filtra solo productos disponibles', function () { fresh(); expect(Catalog.query({ inStock: true }).length).toBe(22); });
+      it('ordena por precio ascendente y descendente', function () {
+        fresh(); var a = Catalog.query({ sort: 'precio-asc' }); var d = Catalog.query({ sort: 'precio-desc' });
+        expect(a[0].price <= a[1].price).toBe(true); expect(d[0].id).toBe('P003');
+      });
+      it('calcula la calificación promedio', function () { fresh(); expect(Catalog.ratingOf('P001')).toEqual({ avg: 4.5, count: 2 }); });
+      it('indica estado de stock', function () {
+        fresh(); expect(Catalog.stockStatus(Store.getProduct('P004')).code).toBe('agotado');
+        expect(Catalog.stockStatus(Store.getProduct('P008')).code).toBe('pocas');
+        expect(Catalog.stockStatus(Store.getProduct('P001')).code).toBe('disponible');
+      });
+    });
+
+    // ---- Carrito ----
+    describe('Carrito (HU09–HU17)', function () {
+      it('agrega un producto y actualiza el contador', function () {
+        fresh(); expect(Cart.add('P007', 2).ok).toBe(true); expect(Cart.count()).toBe(2);
+      });
+      it('acumula cantidad si el producto ya está en el carrito', function () {
+        fresh(); Cart.add('P007', 1); Cart.add('P007', 2); expect(Cart.getItems().length).toBe(1); expect(Cart.count()).toBe(3);
+      });
+      it('no permite agregar productos agotados', function () { fresh(); var r = Cart.add('P004'); expect(r.ok).toBe(false); expect(r.error).toContain('agotado'); });
+      it('no permite superar el stock disponible', function () { fresh(); expect(Cart.add('P008', 3).ok).toBe(false); expect(Cart.add('P008', 2).ok).toBe(true); });
+      it('no permite más de 10 unidades por producto', function () { fresh(); expect(Cart.add('P017', 11).ok).toBe(false); expect(Cart.add('P017', 10).ok).toBe(true); });
+      it('rechaza cantidades no válidas (0, negativas, decimales)', function () {
+        fresh(); expect(Cart.add('P007', 0).ok).toBe(false); expect(Cart.add('P007', -1).ok).toBe(false); expect(Cart.add('P007', 1.5).ok).toBe(false);
+      });
+      it('modifica la cantidad respetando límites', function () {
+        fresh(); Cart.add('P007', 1);
+        expect(Cart.updateQty('P007', 5).ok).toBe(true); expect(Cart.count()).toBe(5);
+        expect(Cart.updateQty('P007', 0).ok).toBe(false); expect(Cart.updateQty('P007', 25).ok).toBe(false);
+      });
+      it('elimina un producto', function () { fresh(); Cart.add('P007'); Cart.add('P015'); Cart.remove('P007'); expect(Cart.getItems().length).toBe(1); });
+      it('vacía el carrito', function () { fresh(); Cart.add('P007'); Cart.add('P015'); Cart.clear(); expect(Cart.count()).toBe(0); });
+      it('calcula subtotal, IGV incluido y total', function () {
+        fresh(); Cart.add('P015', 2); // 2 x 199
+        var t = Cart.totals();
+        expect(t.subtotal).toBe(398); expect(t.total).toBe(398); expect(t.base).toBe(337.29); expect(t.igv).toBe(60.71);
+      });
+      it('aplica cupón porcentual BIENVENIDO10', function () {
+        fresh(); Cart.add('P015', 2); var r = Cart.applyCoupon('bienvenido10');
+        expect(r.ok).toBe(true); expect(Cart.totals().discount).toBe(39.8); expect(Cart.totals().total).toBe(358.2);
+      });
+      it('rechaza cupón inexistente', function () { fresh(); Cart.add('P015'); expect(Cart.applyCoupon('FALSO').ok).toBe(false); });
+      it('rechaza cupón si no se alcanza el monto mínimo', function () { fresh(); Cart.add('P015'); var r = Cart.applyCoupon('TECH50'); expect(r.ok).toBe(false); expect(r.error).toContain('mínima'); });
+      it('anula el descuento si el subtotal baja del mínimo', function () {
+        fresh(); Cart.add('P014', 1); Cart.add('P015', 1); Cart.applyCoupon('TECH50'); expect(Cart.totals().discount).toBe(50);
+        Cart.remove('P014'); expect(Cart.totals().discount).toBe(0); expect(!!Cart.totals().couponError).toBe(true);
+      });
+      it('el carrito persiste en el almacenamiento', function () { fresh(); Cart.add('P007', 3); expect(Store.get('cart').items[0].qty).toBe(3); });
+      it('calcula costo de envío y envío gratis', function () {
+        expect(Cart.shippingCost('estandar', 200)).toBe(15); expect(Cart.shippingCost('estandar', 300)).toBe(0);
+        expect(Cart.shippingCost('express', 5000)).toBe(35); expect(Cart.shippingCost('tienda', 10)).toBe(0);
+      });
+    });
+
+    // ---- Cuenta y seguridad ----
+    describe('Cuenta y seguridad (HU18–HU23)', function () {
+      it('rechaza "abcd123" (muy corta)', function () { expect(Auth.validatePassword('abcd123').ok).toBe(false); });
+      it('rechaza "Abcd1234" (sin carácter especial)', function () { expect(Auth.validatePassword('Abcd1234').ok).toBe(false); });
+      it('acepta "Abcd@1234"', function () { expect(Auth.validatePassword('Abcd@1234').ok).toBe(true); });
+      it('valida formato de correo', function () { expect(Auth.validateEmail('ana@mail.com')).toBe(true); expect(Auth.validateEmail('ana@mail')).toBe(false); });
+      it('registra un usuario válido e inicia sesión', function () {
+        fresh(); var r = Auth.register({ name: 'Ana Pérez', email: 'ana@mail.com', password: 'Abcd@1234', confirm: 'Abcd@1234', consent: true });
+        expect(r.ok).toBe(true); expect(Auth.currentUser().email).toBe('ana@mail.com');
+      });
+      it('no permite registro sin aceptar la política de privacidad', function () {
+        fresh(); var r = Auth.register({ name: 'Ana Pérez', email: 'ana@mail.com', password: 'Abcd@1234', confirm: 'Abcd@1234', consent: false });
+        expect(r.ok).toBe(false); expect(!!r.errors.consent).toBe(true);
+      });
+      it('no permite correo duplicado', function () {
+        fresh(); var r = Auth.register({ name: 'Otro', email: 'DEMO@techstore.pe', password: 'Abcd@1234', confirm: 'Abcd@1234', consent: true });
+        expect(r.ok).toBe(false); expect(r.errors.email).toContain('Ya existe');
+      });
+      it('valida que las contraseñas coincidan', function () {
+        fresh(); var r = Auth.register({ name: 'Ana Pérez', email: 'ana@mail.com', password: 'Abcd@1234', confirm: 'Abcd@12345', consent: true });
+        expect(!!r.errors.confirm).toBe(true);
+      });
+      it('inicia sesión con credenciales correctas', function () { fresh(); expect(loginDemo().ok).toBe(true); });
+      it('rechaza credenciales incorrectas', function () { fresh(); expect(Auth.login('demo@techstore.pe', 'xxx').ok).toBe(false); expect(Auth.currentUser()).toBe(null); });
+      it('bloquea la cuenta tras 5 intentos fallidos', function () {
+        fresh(); var r; for (var i = 0; i < 5; i++) r = Auth.login('demo@techstore.pe', 'mala');
+        expect(r.locked).toBe(true); expect(loginDemo().ok).toBe(false);
+      });
+      it('cierra sesión', function () { fresh(); loginDemo(); Auth.logout(); expect(Auth.currentUser()).toBe(null); });
+      it('expira la sesión tras 15 minutos de inactividad', function () {
+        fresh(); loginDemo(); var s = Store.get('session'); s.lastActivity = Date.now() - (15 * 60 * 1000 + 1000); Store.set('session', s);
+        expect(Auth.currentUser()).toBe(null); expect(Auth.consumeExpiredFlag()).toBe(true);
+      });
+      it('mantiene la sesión con actividad dentro de los 15 minutos', function () {
+        fresh(); loginDemo(); var s = Store.get('session'); s.lastActivity = Date.now() - 14 * 60 * 1000; Store.set('session', s);
+        expect(Auth.currentUser() !== null).toBe(true);
+      });
+      it('actualiza perfil y valida celular', function () {
+        fresh(); loginDemo(); expect(Auth.updateProfile({ name: 'Demo Editado', phone: '123' }).ok).toBe(false);
+        expect(Auth.updateProfile({ name: 'Demo Editado', phone: '999888777' }).ok).toBe(true); expect(Auth.currentUser().name).toBe('Demo Editado');
+      });
+      it('agrega y elimina direcciones', function () {
+        fresh(); loginDemo(); var r = Auth.saveAddress(VALID_ADDRESS); expect(r.ok).toBe(true);
+        expect(Auth.currentUser().addresses.length).toBe(2); Auth.deleteAddress(r.address.id); expect(Auth.currentUser().addresses.length).toBe(1);
+      });
+    });
+
+    // ---- Checkout ----
+    describe('Checkout y pedidos (HU24–HU29)', function () {
+      it('valida dirección incompleta', function () { expect(Auth.validateAddress({ fullName: 'A' }).ok).toBe(false); expect(Auth.validateAddress(VALID_ADDRESS).ok).toBe(true); });
+      it('Luhn: acepta 4111111111111111 y rechaza 4111111111111112', function () { expect(Checkout.luhn('4111111111111111')).toBe(true); expect(Checkout.luhn('4111111111111112')).toBe(false); });
+      it('detecta la marca de la tarjeta', function () { expect(Checkout.cardBrand('4111')).toBe('Visa'); expect(Checkout.cardBrand('5555')).toBe('Mastercard'); expect(Checkout.cardBrand('3782')).toBe('American Express'); });
+      it('rechaza tarjeta vencida', function () { expect(Checkout.validateExpiry('01/20', new Date(2026, 9, 3))).toBe(false); expect(Checkout.validateExpiry('10/26', new Date(2026, 9, 3))).toBe(true); });
+      it('rechaza CVV inválido', function () { var c = JSON.parse(JSON.stringify(VALID_CARD)); c.cvv = '12'; expect(Checkout.validateCard(c, new Date(2026, 9, 3)).ok).toBe(false); });
+      it('no permite comprar sin sesión', function () { fresh(); Cart.add('P007'); var r = Checkout.placeOrder({}); expect(r.ok).toBe(false); expect(r.error).toContain('sesión'); });
+      it('no permite comprar con el carrito vacío', function () { fresh(); loginDemo(); expect(Checkout.placeOrder({}).error).toContain('vacío'); });
+      it('crea el pedido, descuenta stock y vacía el carrito', function () {
+        fresh(); loginDemo(); Cart.add('P007', 2);
+        var r = Checkout.placeOrder({ address: VALID_ADDRESS, shippingMethod: 'express', payment: { method: 'card', card: VALID_CARD } }, new Date(2026, 9, 3));
+        expect(r.ok).toBe(true); expect(r.order.id).toContain('TS-'); expect(r.order.totals.total).toBe(1833);
+        expect(r.order.payment.last4).toBe('1111'); expect(Store.getProduct('P007').stock).toBe(18); expect(Cart.count()).toBe(0);
+      });
+      it('el pedido aparece en el historial del usuario', function () {
+        fresh(); loginDemo(); Cart.add('P015');
+        Checkout.placeOrder({ address: VALID_ADDRESS, shippingMethod: 'tienda', payment: { method: 'contraentrega' } });
+        expect(Checkout.getOrders().length).toBe(1); expect(Checkout.getOrders()[0].payment.method).toBe('Pago contra entrega');
+      });
+      it('no confirma el pedido si el stock cambió y es insuficiente', function () {
+        fresh(); loginDemo(); Cart.add('P008', 2);
+        var ps = Store.getProducts(); ps.forEach(function (p) { if (p.id === 'P008') p.stock = 1; }); Store.saveProducts(ps);
+        var r = Checkout.placeOrder({ address: VALID_ADDRESS, shippingMethod: 'tienda', payment: { method: 'contraentrega' } });
+        expect(r.ok).toBe(false); expect(r.error).toContain('Stock insuficiente');
+      });
+    });
+
+    // ---- Favoritos ----
+    describe('Favoritos (HU30)', function () {
+      it('requiere sesión para guardar favoritos', function () { fresh(); expect(Catalog.toggleFavorite('P001').needLogin).toBe(true); });
+      it('agrega y quita favoritos', function () {
+        fresh(); loginDemo(); expect(Catalog.toggleFavorite('P001').added).toBe(true); expect(Catalog.isFavorite('P001')).toBe(true);
+        expect(Catalog.toggleFavorite('P001').added).toBe(false); expect(Catalog.getWishlist().length).toBe(0);
+      });
+    });
+
+    // ---- Ejecutar ----
+    var total = 0, failed = 0, html = '';
+    suites.forEach(function (s) {
+      html += '<section><h2>' + s.name + '</h2><ul>';
+      s.tests.forEach(function (t) {
+        total++;
+        try { t.fn(); html += '<li class="pass">' + t.name + '</li>'; }
+        catch (e) { failed++; html += '<li class="err">' + t.name + ' — ' + e.message + '</li>'; }
+      });
+      html += '</ul></section>';
+    });
+    document.getElementById('results').innerHTML = html;
+    var sum = document.getElementById('summary');
+    sum.className = 'summary ' + (failed ? 'fail' : 'ok');
+    sum.textContent = (total - failed) + ' de ' + total + ' pruebas aprobadas' + (failed ? ' — ' + failed + ' fallida(s)' : ' ✔');
+    sum.setAttribute('data-testid', 'test-summary');
+    window.TEST_RESULT = { total: total, failed: failed };
+  </script>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TechStore | Producto</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-page="producto">
+  <header id="site-header" class="site-header"></header>
+
+  <main>
+    <div id="content"></div>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/catalog.js"></script>
+  <script src="js/ui.js"></script>
+  <script>
+    UI.init({ active: 'catalogo' });
+
+    var id = UI.qs('id');
+    var content = document.getElementById('content');
+
+    function render() {
+      var p = Store.getProduct(id);
+      if (!p) {
+        content.innerHTML = '<div class="empty card" data-testid="product-not-found"><div class="icon">❓</div><h1>Producto no encontrado</h1>' +
+          '<p class="muted">El producto que buscas no existe o ya no está disponible.</p><a class="btn btn-primary" href="index.html">Volver al catálogo</a></div>';
+        return;
+      }
+      document.title = 'TechStore | ' + p.name;
+      var st = Catalog.stockStatus(p);
+      var rating = Catalog.ratingOf(p.id);
+      var reviews = Catalog.getReviews(p.id);
+      var fav = Catalog.isFavorite(p.id);
+      var max = Math.min(p.stock, TS_DATA.MAX_QTY_PER_ITEM);
+      var inCart = 0;
+      Cart.getItems().forEach(function (it) { if (it.productId === p.id) inCart = it.qty; });
+
+      var specs = Object.keys(p.specs).map(function (k) {
+        return '<tr><th scope="row">' + UI.esc(k) + '</th><td>' + UI.esc(p.specs[k]) + '</td></tr>';
+      }).join('');
+
+      var reviewsHtml = reviews.length ? reviews.map(function (r) {
+        return '<div class="review" data-testid="review"><div>' + UI.stars(r.rating) + ' <strong>' + UI.esc(r.user) + '</strong> ' +
+          '<span class="muted small">· ' + UI.esc(r.date) + '</span></div><p style="margin:4px 0 0">' + UI.esc(r.comment) + '</p></div>';
+      }).join('') : '<p class="muted" data-testid="no-reviews">Este producto aún no tiene reseñas.</p>';
+
+      content.innerHTML =
+        '<nav class="breadcrumb" aria-label="Ruta"><a href="index.html">Inicio</a> › <a href="index.html?cat=' + p.category + '">' +
+          UI.esc(Catalog.categoryName(p.category)) + '</a> › ' + UI.esc(p.name) + '</nav>' +
+        '<div class="detail card">' +
+          '<div><img src="' + UI.productImage(p) + '" alt="' + UI.esc(p.name) + '"></div>' +
+          '<div>' +
+            '<span class="muted">' + UI.esc(p.brand) + ' · Código ' + p.id + '</span>' +
+            '<h1 data-testid="product-title">' + UI.esc(p.name) + '</h1>' +
+            '<div>' + (rating.count ? UI.stars(rating.avg) + ' <span class="muted">' + rating.avg + ' de 5 (' + rating.count + ' reseñas)</span>' : '<span class="muted">Sin reseñas</span>') + '</div>' +
+            '<p class="price" data-testid="product-price">' + UI.money(p.price) + ' <span class="muted small" style="font-weight:400">IGV incluido</span></p>' +
+            '<p class="stock stock-' + st.code + '" data-testid="product-stock">' + st.label + '</p>' +
+            '<p>' + UI.esc(p.description) + '</p>' +
+            (p.stock > 0 ?
+              '<div class="qty-row">' +
+                '<div class="qty"><button type="button" id="dec" aria-label="Disminuir cantidad" data-testid="qty-decrease">−</button>' +
+                '<label class="sr-only" for="qty">Cantidad</label><input id="qty" type="number" min="1" max="' + max + '" value="1" data-testid="qty-input">' +
+                '<button type="button" id="inc" aria-label="Aumentar cantidad" data-testid="qty-increase">+</button></div>' +
+                '<button type="button" class="btn btn-primary" id="add" data-testid="add-to-cart">Agregar al carrito</button>' +
+                '<button type="button" class="btn btn-outline" id="fav" aria-pressed="' + fav + '" data-testid="toggle-favorite">' + (fav ? '♥ En favoritos' : '♡ Favorito') + '</button>' +
+              '</div>' +
+              '<p class="muted small">Máximo ' + max + ' unidad(es) por pedido.' + (inCart ? ' Ya tienes <strong data-testid="in-cart-qty">' + inCart + '</strong> en tu carrito.' : '') + '</p>'
+              :
+              '<div class="alert alert-warn" data-testid="out-of-stock">Producto agotado. Agrégalo a favoritos para revisarlo más tarde.</div>' +
+              '<button type="button" class="btn btn-outline" id="fav" aria-pressed="' + fav + '" data-testid="toggle-favorite">' + (fav ? '♥ En favoritos' : '♡ Favorito') + '</button>') +
+          '</div>' +
+        '</div>' +
+        '<div class="two-col" style="margin-top:24px">' +
+          '<section class="card"><h2>Especificaciones técnicas</h2><table class="specs" data-testid="specs">' + specs + '</table></section>' +
+          '<section class="card"><h2>Reseñas de clientes</h2><div data-testid="reviews">' + reviewsHtml + '</div></section>' +
+        '</div>';
+
+      var qty = document.getElementById('qty');
+      if (qty) {
+        document.getElementById('dec').onclick = function () { qty.value = Math.max(1, (parseInt(qty.value, 10) || 1) - 1); };
+        document.getElementById('inc').onclick = function () { qty.value = Math.min(max, (parseInt(qty.value, 10) || 0) + 1); };
+        document.getElementById('add').onclick = function () {
+          var n = Number(qty.value);
+          var r = Cart.add(p.id, n);
+          if (r.ok) { UI.toast(n + ' unidad(es) agregada(s) al carrito.', 'success'); UI.updateCartCount(); render(); }
+          else UI.toast(r.error, 'error');
+        };
+      }
+      document.getElementById('fav').onclick = function () {
+        var f = Catalog.toggleFavorite(p.id);
+        if (f.needLogin) { UI.toast(f.error, 'warn'); setTimeout(function () { window.location.href = 'login.html?next=' + encodeURIComponent('producto.html?id=' + p.id); }, 1200); return; }
+        if (f.ok) { UI.toast(f.added ? 'Agregado a favoritos.' : 'Eliminado de favoritos.', 'success'); render(); }
+      };
+    }
+    render();
+  </script>
+</body>
+</html>

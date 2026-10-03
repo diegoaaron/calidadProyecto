@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TechStore | Carrito</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-page="carrito">
+  <header id="site-header" class="site-header"></header>
+
+  <main>
+    <h1>Tu carrito</h1>
+    <div id="content"></div>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/catalog.js"></script>
+  <script src="js/ui.js"></script>
+  <script>
+    UI.init({ active: 'carrito' });
+    var content = document.getElementById('content');
+
+    function render() {
+      var items = Cart.getItems();
+      if (!items.length) {
+        content.innerHTML = '<div class="empty card" data-testid="empty-cart"><div class="icon">🛒</div><h2>Tu carrito está vacío</h2>' +
+          '<p class="muted">Explora nuestro catálogo y agrega los productos que te gusten.</p>' +
+          '<a class="btn btn-primary" href="index.html" data-testid="go-shopping">Ir al catálogo</a></div>';
+        UI.updateCartCount();
+        return;
+      }
+      var t = Cart.totals();
+      var rows = items.map(function (it) {
+        var max = Math.min(it.stock, TS_DATA.MAX_QTY_PER_ITEM);
+        return '<div class="cart-item" data-testid="cart-item" data-id="' + it.productId + '">' +
+          '<a href="producto.html?id=' + it.productId + '"><img src="' + UI.productImage(it) + '" alt="' + UI.esc(it.name) + '"></a>' +
+          '<div><a href="producto.html?id=' + it.productId + '" class="title" data-testid="cart-item-name"><strong>' + UI.esc(it.name) + '</strong></a>' +
+            '<div class="muted small">Precio unitario: <span data-testid="cart-item-price">' + UI.money(it.price) + '</span></div>' +
+            '<div class="controls">' +
+              '<div class="qty"><button type="button" class="dec" aria-label="Disminuir cantidad" data-testid="qty-decrease">−</button>' +
+              '<label class="sr-only" for="q-' + it.productId + '">Cantidad</label>' +
+              '<input id="q-' + it.productId + '" class="qty-input" type="number" min="1" max="' + max + '" value="' + it.qty + '" data-testid="qty-input">' +
+              '<button type="button" class="inc" aria-label="Aumentar cantidad" data-testid="qty-increase">+</button></div>' +
+              '<button type="button" class="btn btn-small btn-danger remove" data-testid="remove-item">Eliminar</button>' +
+            '</div>' +
+            (it.stock <= 3 ? '<div class="stock stock-pocas small">Quedan ' + it.stock + ' en stock</div>' : '') +
+          '</div>' +
+          '<div class="line-total" data-testid="cart-item-total">' + UI.money(it.lineTotal) + '</div>' +
+        '</div>';
+      }).join('');
+
+      content.innerHTML =
+        '<div class="cart-layout">' +
+          '<section class="card">' +
+            '<div class="toolbar" style="margin:0"><span class="muted" data-testid="cart-units">' + t.units + ' unidad(es)</span>' +
+            '<button type="button" class="btn btn-small btn-outline" id="clear" data-testid="clear-cart">Vaciar carrito</button></div>' +
+            rows +
+            '<p style="margin-top:14px"><a href="index.html">← Seguir comprando</a></p>' +
+          '</section>' +
+          '<aside class="card summary" aria-label="Resumen del pedido" data-testid="cart-summary">' +
+            '<h2>Resumen</h2>' +
+            '<div class="row"><span>Subtotal</span><span data-testid="subtotal">' + UI.money(t.subtotal) + '</span></div>' +
+            (t.coupon ? '<div class="row discount"><span>Cupón ' + UI.esc(t.coupon) + ' <button type="button" class="link-btn" id="rm-coupon" style="color:var(--danger)" data-testid="remove-coupon">(quitar)</button></span><span data-testid="discount">− ' + UI.money(t.discount) + '</span></div>' : '') +
+            (t.couponError ? '<div class="alert alert-warn small" data-testid="coupon-warning">' + UI.esc(t.couponError) + ' El descuento no se aplica.</div>' : '') +
+            '<div class="row muted small"><span>Envío</span><span>Se calcula en el checkout</span></div>' +
+            '<div class="row total"><span>Total</span><span data-testid="total">' + UI.money(t.total) + '</span></div>' +
+            '<div class="row muted small"><span>Incluye IGV (18 %)</span><span data-testid="igv">' + UI.money(t.igv) + '</span></div>' +
+            '<form class="coupon-form" id="coupon-form" data-testid="coupon-form">' +
+              '<label class="sr-only" for="coupon">Código de cupón</label>' +
+              '<input id="coupon" name="coupon" placeholder="Código de cupón" autocomplete="off" data-testid="coupon-input">' +
+              '<button class="btn btn-outline" type="submit" data-testid="apply-coupon">Aplicar</button>' +
+            '</form>' +
+            '<div class="field-error" id="coupon-error" data-testid="coupon-error"></div>' +
+            '<a class="btn btn-accent btn-block" href="checkout.html" style="margin-top:12px" data-testid="go-checkout">Continuar con la compra</a>' +
+          '</aside>' +
+        '</div>';
+      UI.updateCartCount();
+    }
+
+    function change(id, qty) {
+      var r = Cart.updateQty(id, qty);
+      if (!r.ok) UI.toast(r.error, 'error');
+      render();
+    }
+
+    content.addEventListener('click', function (e) {
+      var item = e.target.closest('.cart-item');
+      var id = item && item.getAttribute('data-id');
+      if (e.target.closest('.inc')) { change(id, Number(item.querySelector('.qty-input').value) + 1); }
+      else if (e.target.closest('.dec')) {
+        var v = Number(item.querySelector('.qty-input').value);
+        if (v <= 1) UI.toast('La cantidad mínima es 1. Usa "Eliminar" para quitar el producto.', 'warn');
+        else change(id, v - 1);
+      }
+      else if (e.target.closest('.remove')) {
+        Cart.remove(id); UI.toast('Producto eliminado del carrito.', 'success'); render();
+      }
+      else if (e.target.id === 'clear') {
+        if (confirm('¿Seguro que deseas vaciar el carrito?')) { Cart.clear(); UI.toast('Carrito vaciado.', 'success'); render(); }
+      }
+      else if (e.target.id === 'rm-coupon') { Cart.removeCoupon(); render(); }
+    });
+
+    content.addEventListener('change', function (e) {
+      if (e.target.classList.contains('qty-input')) {
+        change(e.target.closest('.cart-item').getAttribute('data-id'), Number(e.target.value));
+      }
+    });
+
+    content.addEventListener('submit', function (e) {
+      if (e.target.id !== 'coupon-form') return;
+      e.preventDefault();
+      var r = Cart.applyCoupon(document.getElementById('coupon').value);
+      if (r.ok) { UI.toast('Cupón aplicado: ' + r.description, 'success'); render(); }
+      else document.getElementById('coupon-error').textContent = r.error;
+    });
+
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+# Material de referencia del curso (no publicar)
+historia_usuarios.pptx
+Modelo de *.docx
+
+# Temporales
+~$*
+.DS_Store
+Thumbs.db
+node_modules/

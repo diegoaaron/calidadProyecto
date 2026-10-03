@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TechStore | Crear cuenta</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-page="registro">
+  <header id="site-header" class="site-header"></header>
+
+  <main>
+    <div class="card narrow">
+      <h1>Crear cuenta</h1>
+      <div id="alert"></div>
+      <form id="register-form" novalidate data-testid="register-form">
+        <div class="field">
+          <label for="name">Nombre completo</label>
+          <input id="name" name="name" autocomplete="name" required data-testid="register-name">
+          <div class="field-error" data-error-for="name"></div>
+        </div>
+        <div class="field">
+          <label for="email">Correo electrónico</label>
+          <input id="email" name="email" type="email" autocomplete="email" required data-testid="register-email">
+          <div class="field-error" data-error-for="email"></div>
+        </div>
+        <div class="field">
+          <label for="phone">Celular (opcional)</label>
+          <input id="phone" name="phone" inputmode="numeric" maxlength="9" placeholder="9XXXXXXXX" data-testid="register-phone">
+          <div class="field-error" data-error-for="phone"></div>
+        </div>
+        <div class="field">
+          <label for="password">Contraseña</label>
+          <input id="password" name="password" type="password" autocomplete="new-password" required aria-describedby="pwd-rules" data-testid="register-password">
+          <ul class="field-hint" id="pwd-rules" data-testid="password-rules" style="padding-left:18px;margin:6px 0 0">
+            <li data-rule="len">Mínimo 8 caracteres</li>
+            <li data-rule="upper">Una letra mayúscula</li>
+            <li data-rule="lower">Una letra minúscula</li>
+            <li data-rule="num">Un número</li>
+            <li data-rule="special">Un carácter especial (@ # $ % ...)</li>
+          </ul>
+          <div class="field-error" data-error-for="password"></div>
+        </div>
+        <div class="field">
+          <label for="confirm">Confirmar contraseña</label>
+          <input id="confirm" name="confirm" type="password" autocomplete="new-password" required data-testid="register-confirm">
+          <div class="field-error" data-error-for="confirm"></div>
+        </div>
+        <div class="field">
+          <label class="checkbox"><input type="checkbox" name="consent" id="consent" data-testid="register-consent">
+            <span>He leído y acepto la <a href="privacidad.html" target="_blank" rel="noopener">Política de Privacidad</a> y autorizo el tratamiento de mis datos personales conforme a la Ley N.° 29733.</span></label>
+          <div class="field-error" data-error-for="consent" data-testid="consent-error"></div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" data-testid="register-submit">Crear cuenta</button>
+      </form>
+      <p class="muted" style="margin-top:16px">¿Ya tienes cuenta? <a id="login-link" href="login.html" data-testid="go-login">Inicia sesión</a></p>
+    </div>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/catalog.js"></script>
+  <script src="js/ui.js"></script>
+  <script>
+    UI.init({ active: 'registro' });
+    var next = UI.qs('next') || 'index.html';
+    if (!/^[a-z]+\.html/.test(next)) next = 'index.html';
+    document.getElementById('login-link').href = 'login.html?next=' + encodeURIComponent(next);
+
+    // Indicador en vivo de la política de contraseñas
+    var rules = {
+      len: function (p) { return p.length >= 8; },
+      upper: function (p) { return /[A-Z]/.test(p); },
+      lower: function (p) { return /[a-z]/.test(p); },
+      num: function (p) { return /[0-9]/.test(p); },
+      special: function (p) { return /[^A-Za-z0-9]/.test(p); }
+    };
+    document.getElementById('password').addEventListener('input', function (e) {
+      Object.keys(rules).forEach(function (k) {
+        var li = document.querySelector('[data-rule="' + k + '"]');
+        var ok = rules[k](e.target.value);
+        li.style.color = ok ? 'var(--success)' : '';
+        li.textContent = li.textContent.replace(/^✓ /, '');
+        if (ok) li.textContent = '✓ ' + li.textContent;
+      });
+    });
+
+    document.getElementById('register-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var f = this;
+      var r = Auth.register({ name: f.name.value, email: f.email.value, phone: f.phone.value,
+        password: f.password.value, confirm: f.confirm.value, consent: f.consent.checked });
+      if (r.ok) {
+        UI.toast('¡Cuenta creada con éxito! Bienvenido a TechStore.', 'success');
+        setTimeout(function () { window.location.href = next; }, 800);
+      } else {
+        UI.showErrors(f, r.errors);
+        document.getElementById('alert').innerHTML = '<div class="alert alert-error" role="alert" data-testid="register-error">Revisa los campos marcados.</div>';
+      }
+    });
+  </script>
+</body>
+</html>

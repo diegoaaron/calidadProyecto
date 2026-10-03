@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TechStore | Catálogo</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-page="catalogo">
+  <header id="site-header" class="site-header"></header>
+
+  <main>
+    <div id="page-alert"></div>
+    <div class="cat-chips" id="cat-chips" role="group" aria-label="Categorías" data-testid="category-chips"></div>
+
+    <div class="catalog">
+      <details class="card filters" id="filters" open data-testid="filters">
+        <summary><h2>Filtros</h2></summary>
+        <fieldset>
+          <legend>Precio (S/)</legend>
+          <div class="price-range">
+            <label class="sr-only" for="min-price">Precio mínimo</label>
+            <input id="min-price" type="number" min="0" step="10" placeholder="Mín" data-testid="filter-min-price">
+            <label class="sr-only" for="max-price">Precio máximo</label>
+            <input id="max-price" type="number" min="0" step="10" placeholder="Máx" data-testid="filter-max-price">
+          </div>
+          <div class="field-error" id="price-error" data-testid="price-error"></div>
+        </fieldset>
+        <fieldset>
+          <legend>Marca</legend>
+          <div id="brand-list" data-testid="filter-brands"></div>
+        </fieldset>
+        <fieldset>
+          <legend>Disponibilidad</legend>
+          <label class="checkbox"><input type="checkbox" id="in-stock" data-testid="filter-in-stock"> Solo productos disponibles</label>
+        </fieldset>
+        <button type="button" class="btn btn-outline btn-small btn-block" id="clear-filters" data-testid="clear-filters">Limpiar filtros</button>
+      </details>
+
+      <section aria-labelledby="results-title">
+        <div class="toolbar">
+          <div>
+            <h1 id="results-title" style="margin:0">Catálogo</h1>
+            <span class="muted" id="result-count" data-testid="result-count"></span>
+          </div>
+          <div>
+            <label class="sr-only" for="sort">Ordenar por</label>
+            <select id="sort" data-testid="sort-select">
+              <option value="">Ordenar: Relevancia</option>
+              <option value="precio-asc">Precio: menor a mayor</option>
+              <option value="precio-desc">Precio: mayor a menor</option>
+              <option value="nombre-asc">Nombre: A-Z</option>
+              <option value="nombre-desc">Nombre: Z-A</option>
+              <option value="valoracion">Mejor valorados</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid" id="grid" data-testid="product-grid"></div>
+      </section>
+    </div>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/catalog.js"></script>
+  <script src="js/ui.js"></script>
+  <script>
+    UI.init({ active: 'catalogo' });
+
+    var state = {
+      q: UI.qs('q'),
+      category: UI.qs('cat'),
+      sort: UI.qs('sort'),
+      brands: [],
+      minPrice: '',
+      maxPrice: '',
+      inStock: false
+    };
+
+    if (UI.qs('logout')) document.getElementById('page-alert').innerHTML = '<div class="alert alert-info" data-testid="logout-message">Cerraste sesión correctamente.</div>';
+
+    function syncUrl() {
+      var p = [];
+      if (state.q) p.push('q=' + encodeURIComponent(state.q));
+      if (state.category) p.push('cat=' + encodeURIComponent(state.category));
+      if (state.sort) p.push('sort=' + encodeURIComponent(state.sort));
+      try { history.replaceState(null, '', 'index.html' + (p.length ? '?' + p.join('&') : '')); } catch (e) { /* file:// */ }
+    }
+
+    function renderChips() {
+      var html = '<button type="button" class="chip ' + (!state.category ? 'active' : '') + '" data-cat="" data-testid="category-all">Todos</button>';
+      TS_DATA.categories.forEach(function (c) {
+        html += '<button type="button" class="chip ' + (state.category === c.id ? 'active' : '') + '" data-cat="' + c.id + '" data-testid="category-' + c.id + '">' + c.name + '</button>';
+      });
+      var box = document.getElementById('cat-chips');
+      box.innerHTML = html;
+      Array.prototype.forEach.call(box.querySelectorAll('.chip'), function (b) {
+        b.setAttribute('aria-pressed', b.classList.contains('active') ? 'true' : 'false');
+        b.addEventListener('click', function () {
+          state.category = b.getAttribute('data-cat');
+          state.brands = [];
+          renderChips(); renderBrands(); render();
+        });
+      });
+    }
+
+    function renderBrands() {
+      var box = document.getElementById('brand-list');
+      box.innerHTML = Catalog.brands(state.category).map(function (b) {
+        return '<label class="checkbox"><input type="checkbox" value="' + UI.esc(b) + '" ' + (state.brands.indexOf(b) !== -1 ? 'checked' : '') +
+          ' data-testid="brand-' + UI.esc(b) + '"> ' + UI.esc(b) + '</label>';
+      }).join('');
+      Array.prototype.forEach.call(box.querySelectorAll('input'), function (i) {
+        i.addEventListener('change', function () {
+          state.brands = Array.prototype.map.call(box.querySelectorAll('input:checked'), function (x) { return x.value; });
+          render();
+        });
+      });
+    }
+
+    function productCard(p) {
+      var st = Catalog.stockStatus(p);
+      var fav = Catalog.isFavorite(p.id);
+      return '<article class="product-card" data-testid="product-card" data-id="' + p.id + '">' +
+        '<a href="producto.html?id=' + p.id + '"><img src="' + UI.productImage(p) + '" alt="' + UI.esc(p.name) + '"></a>' +
+        '<div class="body">' +
+          '<span class="muted small">' + UI.esc(Catalog.categoryName(p.category)) + ' · ' + UI.esc(p.brand) + '</span>' +
+          '<a class="title" href="producto.html?id=' + p.id + '" data-testid="product-name">' + UI.esc(p.name) + '</a>' +
+          '<div>' + (p.reviewCount ? UI.stars(p.rating) + ' <span class="muted small">(' + p.reviewCount + ')</span>' : '<span class="muted small">Sin reseñas</span>') + '</div>' +
+          '<div class="price" data-testid="product-price">' + UI.money(p.price) + '</div>' +
+          '<div class="stock stock-' + st.code + '" data-testid="product-stock">' + st.label + '</div>' +
+          '<div class="card-actions">' +
+            '<button type="button" class="btn btn-primary btn-small add-btn" data-id="' + p.id + '" ' + (p.stock <= 0 ? 'disabled' : '') + ' data-testid="add-to-cart">' +
+              (p.stock <= 0 ? 'Agotado' : 'Agregar al carrito') + '</button>' +
+            '<button type="button" class="fav-btn" data-id="' + p.id + '" aria-pressed="' + fav + '" aria-label="' + (fav ? 'Quitar de' : 'Agregar a') + ' favoritos" data-testid="toggle-favorite">' + (fav ? '♥' : '♡') + '</button>' +
+          '</div>' +
+        '</div></article>';
+    }
+
+    function render() {
+      var priceErr = document.getElementById('price-error');
+      priceErr.textContent = '';
+      var min = state.minPrice, max = state.maxPrice;
+      if ((min !== '' && Number(min) < 0) || (max !== '' && Number(max) < 0)) {
+        priceErr.textContent = 'El precio no puede ser negativo.'; return;
+      }
+      if (min !== '' && max !== '' && Number(min) > Number(max)) {
+        priceErr.textContent = 'El precio mínimo no puede ser mayor que el máximo.'; return;
+      }
+      var list = Catalog.query(state);
+      var title = state.category ? Catalog.categoryName(state.category) : 'Catálogo';
+      if (state.q) title = 'Resultados para "' + state.q + '"';
+      document.getElementById('results-title').textContent = title;
+      document.getElementById('result-count').textContent = list.length + (list.length === 1 ? ' producto encontrado' : ' productos encontrados');
+      document.getElementById('sort').value = state.sort || '';
+      var grid = document.getElementById('grid');
+      if (!list.length) {
+        grid.innerHTML = '<div class="empty card" style="grid-column:1/-1" data-testid="no-results"><div class="icon">🔍</div>' +
+          '<h2>No encontramos productos</h2><p class="muted">Prueba con otras palabras o limpia los filtros.</p></div>';
+      } else {
+        grid.innerHTML = list.map(productCard).join('');
+      }
+      syncUrl();
+    }
+
+    document.getElementById('grid').addEventListener('click', function (e) {
+      var add = e.target.closest('.add-btn');
+      if (add) {
+        var r = Cart.add(add.getAttribute('data-id'), 1);
+        if (r.ok) { UI.toast('Producto agregado al carrito.', 'success'); UI.updateCartCount(); }
+        else UI.toast(r.error, 'error');
+        return;
+      }
+      var fav = e.target.closest('.fav-btn');
+      if (fav) {
+        var f = Catalog.toggleFavorite(fav.getAttribute('data-id'));
+        if (f.needLogin) { UI.toast(f.error, 'warn'); setTimeout(function () { window.location.href = 'login.html?next=index.html'; }, 1200); return; }
+        if (f.ok) { UI.toast(f.added ? 'Agregado a favoritos.' : 'Eliminado de favoritos.', 'success'); render(); }
+      }
+    });
+
+    document.getElementById('sort').addEventListener('change', function (e) { state.sort = e.target.value; render(); });
+    document.getElementById('min-price').addEventListener('input', function (e) { state.minPrice = e.target.value; render(); });
+    document.getElementById('max-price').addEventListener('input', function (e) { state.maxPrice = e.target.value; render(); });
+    document.getElementById('in-stock').addEventListener('change', function (e) { state.inStock = e.target.checked; render(); });
+    document.getElementById('clear-filters').addEventListener('click', function () {
+      state = { q: '', category: '', sort: '', brands: [], minPrice: '', maxPrice: '', inStock: false };
+      document.getElementById('min-price').value = '';
+      document.getElementById('max-price').value = '';
+      document.getElementById('in-stock').checked = false;
+      document.getElementById('search-q').value = '';
+      renderChips(); renderBrands(); render();
+    });
+
+    if (window.innerWidth <= 900) document.getElementById('filters').open = false;
+    renderChips(); renderBrands(); render();
+  </script>
+</body>
+</html>
