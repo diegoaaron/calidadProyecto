@@ -59,7 +59,7 @@ Orden de carga de scripts en cada página: `data → store → auth → cart →
 
 ## Entregables del curso (`docs/`)
 
-Los modelos de referencia del docente están en la raíz (`historia_usuarios.pptx`, `Modelo de *.docx`,
+Los modelos de referencia del docente están en `referencias/` (`historia_usuarios.pptx`, `Modelo de *.docx`,
 excluidos de git). Los entregables deben seguir esos modelos y mantener la trazabilidad con
 los IDs del informe de historias: **HU01–HU30, RF01–RF30 (1:1 con las HU), RNF01–RNF09, épicas EP01–EP05**.
 
@@ -67,6 +67,7 @@ los IDs del informe de historias: **HU01–HU30, RF01–RF30 (1:1 con las HU), R
 |---|---|
 | Informe de Historias de Usuario (`docs/Informe_Historias_de_Usuario.docx`) | Hecho |
 | Análisis de usabilidad con Maze (requiere URL de GitHub Pages) | Pendiente |
+| Esquema breve de Plan de Calidad, Plan de Pruebas y Conformidad (`docs/Esquema_Calidad_Pruebas_Conformidad.docx`) | Avance |
 | Plan de Pruebas | Pendiente |
 | Plan de Calidad | Pendiente |
 | Prueba de Conformidad (ISO/IEC 25010) | Pendiente |
