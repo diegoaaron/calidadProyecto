@@ -67,6 +67,9 @@ Los elementos clave de la interfaz tienen atributos `data-testid` para automatiz
 
 ## Publicar en GitHub Pages (necesario para Maze)
 
+Publicada en: **https://diegoaaron.github.io/calidadProyecto/** (la raíz redirige a `app/`).
+Pasos usados para publicarla:
+
 1. Crea un repositorio público en GitHub, por ejemplo `techstore-calidad`.
 2. Desde esta carpeta:
    ```bash

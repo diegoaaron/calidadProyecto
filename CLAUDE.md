@@ -14,7 +14,7 @@ Idioma del proyecto: **español** (UI, documentos, mensajes de commit).
 ## Estructura
 
 ```
-app/                  Aplicación (se publica en GitHub Pages; index.html raíz redirige aquí)
+app/                  Aplicación (publicada en https://diegoaaron.github.io/calidadProyecto/; index.html raíz redirige aquí)
   js/data.js          Datos semilla: productos, reseñas, cupones, envíos, constantes (IGV, timeout)
   js/store.js         Persistencia + reset de datos de demo
   js/auth.js          Registro, login, sesión (15 min), bloqueo (5 intentos), perfil, direcciones
@@ -66,8 +66,8 @@ los IDs del informe de historias: **HU01–HU30, RF01–RF30 (1:1 con las HU), R
 | Entregable | Estado |
 |---|---|
 | Informe de Historias de Usuario (`docs/Informe_Historias_de_Usuario.docx`) | Hecho |
-| Análisis de usabilidad con Maze (requiere URL de GitHub Pages) | Pendiente |
-| Esquema breve de Plan de Calidad, Plan de Pruebas y Conformidad (`docs/Esquema_Calidad_Pruebas_Conformidad.docx`) | Avance |
+| Análisis de usabilidad con Maze (URL: https://diegoaaron.github.io/calidadProyecto/) | Pendiente |
+| Esquema breve de Plan de Calidad, Plan de Pruebas y Conformidad (`docs/Esquema_Calidad_Pruebas_Conformidad.docx`) | Hecho (v1.0, .docx y .pptx) |
 | Plan de Pruebas | Pendiente |
 | Plan de Calidad | Pendiente |
 | Prueba de Conformidad (ISO/IEC 25010) | Pendiente |
