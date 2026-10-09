@@ -68,8 +68,8 @@ los IDs del informe de historias: **HU01–HU30, RF01–RF30 (1:1 con las HU), R
 | Informe de Historias de Usuario (`docs/Informe_Historias_de_Usuario.docx`) | Hecho |
 | Análisis de usabilidad con Maze (URL: https://diegoaaron.github.io/calidadProyecto/) | Pendiente |
 | Esquema breve de Plan de Calidad, Plan de Pruebas y Conformidad (`docs/Esquema_Calidad_Pruebas_Conformidad.docx`) | Hecho (v1.0, .docx y .pptx) |
-| Plan de Pruebas | Pendiente |
-| Plan de Calidad | Pendiente |
-| Prueba de Conformidad (ISO/IEC 25010) | Pendiente |
+| Plan de Pruebas (`docs/Plan_de_Pruebas.docx`) | Hecho (v1.0: diseño de 84 CP + 12 CNF; ejecución pendiente) |
+| Plan de Calidad (`docs/Plan_de_Calidad.docx`) | Hecho (v1.0 con línea base medida el 09/10/2026; 4 métricas pendientes: RF, Maze ×2, MTTR) |
+| Prueba de Conformidad (`docs/Prueba_de_Conformidad.docx`) | Hecho (CC01–CC07 ejecutados en Chrome y Edge: 7/7 cumplen, CC06 con observación) |
 
 En las carátulas, dejar los datos del estudiante/docente como marcadores `[...]` para que el usuario los complete.
