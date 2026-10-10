@@ -1,0 +1,2 @@
+# Los hooks son scripts sh: siempre con saltos de línea LF
+.githooks/* text eol=lf
