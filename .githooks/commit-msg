@@ -1,0 +1,16 @@
+#!/bin/sh
+# Elimina del mensaje de commit cualquier atribución a Claude / Anthropic
+# (Co-Authored-By, "Generated with Claude Code", Claude-Session, etc.).
+# Activar en cada clon con: git config core.hooksPath .githooks
+
+msg="$1"
+tmp="$msg.tmp"
+
+grep -viE '^(co-authored-by|generated[- ]with|claude-session)\b.*(claude|anthropic)|^.*generated with \[?claude code' "$msg" > "$tmp"
+git stripspace < "$tmp" > "$msg"
+rm -f "$tmp"
+
+if [ ! -s "$msg" ]; then
+  echo "commit-msg: el mensaje quedó vacío tras quitar la atribución a Claude." >&2
+  exit 1
+fi

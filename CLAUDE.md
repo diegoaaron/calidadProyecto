@@ -39,6 +39,9 @@ Orden de carga de scripts en cada página: `data → store → auth → cart →
 - Elementos interactivos clave llevan `data-testid` (usados para casos de prueba / automatización). No eliminarlos.
 - Páginas protegidas llaman `UI.init({ protected: true })` y luego `UI.requireAuth()`.
 - Escapar todo contenido dinámico con `UI.esc` al construir HTML.
+- **Commits y PR sin ninguna referencia a Claude/Anthropic** (nada de `Co-Authored-By`, «Generated with Claude Code»
+  ni enlaces de sesión). Lo refuerzan `.claude/settings.json` (`attribution` vacío) y el hook `.githooks/commit-msg`,
+  que elimina esas líneas; en un clon nuevo activarlo con `git config core.hooksPath .githooks`.
 
 ## Reglas de negocio (fuente de verdad para documentos y pruebas)
 
