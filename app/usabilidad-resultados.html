@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TechStore | Resultados de usabilidad</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-page="usabilidad-resultados">
+  <header id="site-header" class="site-header"></header>
+
+  <main>
+    <h1>Resultados de la prueba de usabilidad</h1>
+    <div class="card" style="margin-bottom:16px">
+      <p style="margin-top:0">Carga los archivos <code>usabilidad-*.json</code> que te enviaron los participantes, o pega su texto.
+        Los resultados se guardan solo en este navegador.</p>
+      <div class="two-col">
+        <div class="field">
+          <label for="files">Archivos de resultados</label>
+          <input id="files" type="file" accept=".json,application/json" multiple data-testid="results-files">
+        </div>
+        <div class="field">
+          <label for="paste">O pega el texto de un participante</label>
+          <textarea id="paste" rows="2" data-testid="results-paste"></textarea>
+          <button type="button" class="btn btn-outline btn-small" id="add-paste" style="margin-top:6px" data-testid="results-add">Agregar</button>
+        </div>
+      </div>
+      <div class="field-error" id="load-error" data-testid="results-error"></div>
+    </div>
+    <div id="report"></div>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/catalog.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/usability.js"></script>
+  <script>
+    UI.init({ active: 'usabilidad-resultados' });
+    var KEY = 'usab_results';
+    var errorBox = document.getElementById('load-error');
+
+    function addResults(texts) {
+      var list = Store.get(KEY, []);
+      var known = {};
+      list.forEach(function (r) { known[r.id] = true; });
+      var added = 0, errors = [];
+      texts.forEach(function (t) {
+        var data;
+        try { data = JSON.parse(t.text); } catch (e) { errors.push(t.name + ': no es un JSON válido'); return; }
+        (Array.isArray(data) ? data : [data]).forEach(function (r) {
+          if (!Usability.aggregate([r]).participants.length) { errors.push(t.name + ': no es un resultado de la prueba'); return; }
+          if (known[r.id]) { errors.push(t.name + ': el participante ' + r.id + ' ya estaba cargado'); return; }
+          known[r.id] = true; list.push(r); added++;
+        });
+      });
+      Store.set(KEY, list);
+      errorBox.textContent = errors.join(' · ');
+      if (added) UI.toast(added + ' resultado(s) agregado(s).', 'success');
+      render();
+    }
+
+    document.getElementById('files').addEventListener('change', function () {
+      var files = Array.prototype.slice.call(this.files), texts = [], input = this;
+      if (!files.length) return;
+      files.forEach(function (f) {
+        var rd = new FileReader();
+        rd.onload = function () {
+          texts.push({ name: f.name, text: rd.result });
+          if (texts.length === files.length) { addResults(texts); input.value = ''; }
+        };
+        rd.readAsText(f);
+      });
+    });
+    document.getElementById('add-paste').addEventListener('click', function () {
+      var ta = document.getElementById('paste');
+      if (!ta.value.trim()) return;
+      addResults([{ name: 'Texto pegado', text: ta.value.trim() }]);
+      ta.value = '';
+    });
+
+    function fmt(n, suffix) { return n === null || n === undefined ? '—' : String(n).replace('.', ',') + (suffix || ''); }
+    function goal(ok, text) { return '<div class="goal ' + (ok ? 'ok-text' : 'bad-text') + '">' + (ok ? '✔ ' : '✘ ') + text + '</div>'; }
+    function bar(pct) { return '<div class="bar"><span style="width:' + Math.max(0, Math.min(100, pct || 0)) + '%"></span></div>'; }
+
+    function download(name, text, type) {
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([text], { type: type }));
+      a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+    }
+
+    function csv(agg) {
+      var rows = [['participante', 'alias', 'ancho_pantalla', 'tactil', 'tarea', 'estado', 'tiempo_s', 'clics', 'clics_errados', 'facilidad_seq', 'sus', 'paginas']];
+      agg.participants.forEach(function (p) {
+        p.tasks.forEach(function (t) {
+          rows.push([p.id, p.alias, p.device.width, p.device.touch ? 'si' : 'no', t.id + ' ' + t.name, t.status,
+            t.timeMs === null ? '' : (t.timeMs / 1000).toFixed(1), t.clicks, t.misclicks, t.seq || '', p.sus.score, t.pages.join(' > ')]);
+        });
+      });
+      return '﻿' + rows.map(function (r) {
+        return r.map(function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(';');
+      }).join('\r\n');
+    }
+
+    function render() {
+      var list = Store.get(KEY, []);
+      var rep = document.getElementById('report');
+      if (!list.length) {
+        rep.innerHTML = '<div class="empty card" data-testid="results-empty"><div class="icon">📊</div><h2>Aún no hay resultados</h2>' +
+          '<p class="muted">Comparte el enlace <a href="usabilidad.html">usabilidad.html</a> con los participantes ' +
+          '(mínimo ' + Usability.GOALS.minParticipants + ').</p></div>';
+        return;
+      }
+      var agg = Usability.aggregate(list), o = agg.overall, G = Usability.GOALS;
+      rep.innerHTML =
+        '<div class="metric-grid">' +
+          '<div class="card metric"><div class="muted small">Participantes</div><div class="value" data-testid="m-participants">' + o.participants + '</div>' +
+            goal(o.enoughParticipants, 'mínimo ' + G.minParticipants) + '</div>' +
+          '<div class="card metric"><div class="muted small">Tasa de éxito de tareas</div><div class="value" data-testid="m-success">' + fmt(o.successRate, ' %') + '</div>' +
+            goal(o.meetsSuccess, 'meta ≥ ' + G.successRate + ' %') + '</div>' +
+          '<div class="card metric"><div class="muted small">Satisfacción SUS (promedio)</div><div class="value" data-testid="m-sus">' + fmt(o.susMean) + '</div>' +
+            goal(o.meetsSus, 'meta ≥ ' + G.sus + ' · ' + o.susGrade) + '</div>' +
+          '<div class="card metric"><div class="muted small">SUS mín. – máx. (desv. est.)</div><div class="value" style="font-size:1.3rem">' +
+            fmt(o.susMin) + ' – ' + fmt(o.susMax) + '</div><div class="goal muted">σ = ' + fmt(o.susSd) + '</div></div>' +
+        '</div>' +
+        '<div class="card" style="margin-bottom:16px"><h2>Resultados por tarea</h2><div class="table-wrap"><table class="data-table" data-testid="task-table">' +
+          '<thead><tr><th>Tarea</th><th>Historias</th><th class="num">Éxito</th><th></th><th class="num">Tiempo prom. (s)</th>' +
+          '<th class="num">Mediana (s)</th><th class="num">Clics errados</th><th class="num">Facilidad (1–7)</th></tr></thead><tbody>' +
+          agg.tasks.map(function (t) {
+            return '<tr><td><strong>' + t.id + '</strong> ' + UI.esc(t.name) + '</td><td class="small">' + UI.esc(t.hu) + '</td>' +
+              '<td class="num">' + t.successes + '/' + t.attempts + ' (' + fmt(t.successRate, ' %') + ')</td><td>' + bar(t.successRate) + '</td>' +
+              '<td class="num">' + fmt(t.meanTime) + '</td><td class="num">' + fmt(t.medianTime) + '</td>' +
+              '<td class="num">' + fmt(t.misclickRate, ' %') + '</td><td class="num">' + fmt(t.seq) + '</td></tr>';
+          }).join('') +
+          '</tbody></table></div><p class="small muted">Tiempo: solo intentos exitosos. Clics errados: clics fuera de elementos interactivos ÷ clics totales. ' +
+          'Facilidad: pregunta SEQ tras cada tarea (1 = muy difícil, 7 = muy fácil).</p></div>' +
+        '<div class="card" style="margin-bottom:16px"><h2>Participantes</h2><div class="table-wrap"><table class="data-table" data-testid="participant-table">' +
+          '<thead><tr><th>Código</th><th>Alias</th><th>Dispositivo</th><th class="num">Tareas logradas</th><th class="num">SUS</th><th>Nivel</th><th>Comentario</th></tr></thead><tbody>' +
+          agg.participants.map(function (p) {
+            var ok = p.tasks.filter(function (t) { return t.status === 'exito'; }).length;
+            return '<tr><td>' + UI.esc(p.id) + '</td><td>' + UI.esc(p.alias) + '</td><td class="small">' +
+              (p.device.width <= 600 ? 'Móvil' : p.device.width <= 1024 ? 'Tableta' : 'Escritorio') + ' (' + UI.esc(p.device.width) + ' px)</td>' +
+              '<td class="num">' + ok + '/' + p.tasks.length + '</td><td class="num">' + fmt(p.sus.score) + '</td><td>' + Usability.susGrade(p.sus.score) + '</td>' +
+              '<td class="small">' + UI.esc(p.comment) + '</td></tr>';
+          }).join('') +
+          '</tbody></table></div></div>' +
+        '<div class="step-actions" style="justify-content:flex-start">' +
+          '<button type="button" class="btn btn-primary" id="export-csv" data-testid="export-csv">Exportar CSV (Excel)</button>' +
+          '<button type="button" class="btn btn-outline" id="export-json" data-testid="export-json">Exportar todo (JSON)</button>' +
+          '<button type="button" class="btn btn-danger" id="clear" data-testid="results-clear">Borrar resultados cargados</button></div>';
+      document.getElementById('export-csv').addEventListener('click', function () {
+        download('usabilidad-consolidado.csv', csv(agg), 'text/csv;charset=utf-8');
+      });
+      document.getElementById('export-json').addEventListener('click', function () {
+        download('usabilidad-consolidado.json', JSON.stringify({ resumen: { overall: o, tasks: agg.tasks }, participantes: agg.participants }, null, 2), 'application/json');
+      });
+      document.getElementById('clear').addEventListener('click', function () {
+        if (confirm('Se borrarán los resultados cargados en este navegador (los archivos originales no se tocan). ¿Continuar?')) {
+          Store.remove(KEY); errorBox.textContent = ''; render();
+        }
+      });
+    }
+    render();
+  </script>
+</body>
+</html>

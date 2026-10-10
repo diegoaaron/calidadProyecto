@@ -131,7 +131,8 @@ var UI = (function () {
           '<li>Tarjeta Visa de prueba: <code>4111 1111 1111 1111</code>, cualquier fecha futura, CVV <code>123</code></li></ul>' +
           '<button type="button" class="btn btn-small btn-outline" id="reset-demo" data-testid="reset-demo">Restablecer datos de demo</button>' +
         '</details>' +
-        '<p class="muted small"><a href="privacidad.html">Política de privacidad</a> · v1.0</p>' +
+        '<p class="muted small"><a href="privacidad.html">Política de privacidad</a> · ' +
+          '<a href="usabilidad.html" data-testid="footer-usabilidad">Prueba de usabilidad</a> · v1.0</p>' +
       '</div>';
     document.getElementById('reset-demo').addEventListener('click', function () {
       if (confirm('Se borrarán carrito, pedidos, usuarios creados y stock modificado. ¿Continuar?')) {

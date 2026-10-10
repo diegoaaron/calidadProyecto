@@ -2,7 +2,7 @@
 
 Aplicación web de **carrito de compras** (tienda de tecnología) hecha solo con HTML, CSS y JavaScript.
 No tiene backend: todo corre en el navegador y los datos se guardan en `localStorage`.
-Sirve como sistema controlado para los entregables del curso: historias de usuario, análisis con Maze,
+Sirve como sistema controlado para los entregables del curso: historias de usuario, análisis de usabilidad,
 plan de pruebas, plan de calidad y prueba de conformidad.
 
 ## Estructura
@@ -17,7 +17,9 @@ app/                 Aplicación web (lo que se publica)
   pedidos.html       Historial de pedidos
   favoritos.html     Lista de favoritos
   login.html / registro.html / perfil.html / privacidad.html
-  js/                Lógica (data, store, auth, cart, catalog, checkout, ui)
+  usabilidad.html    Prueba de usabilidad para participantes (alternativa propia a Maze)
+  usabilidad-resultados.html  Consolidado de resultados de la prueba de usabilidad
+  js/                Lógica (data, store, auth, cart, catalog, checkout, ui, usability)
   tests/tests.html   Pruebas unitarias (abrir en el navegador)
 docs/                Entregables del curso (.docx)
 index.html           Redirección a app/ (para GitHub Pages)
@@ -59,13 +61,27 @@ En el pie de página, **Datos de prueba → Restablecer datos de demo** vuelve l
 
 ## Pruebas
 
-Abrir `app/tests/tests.html` en el navegador: ejecuta 53 pruebas unitarias sobre la lógica
-(carrito, autenticación, checkout, catálogo y favoritos) con almacenamiento en memoria.
+Abrir `app/tests/tests.html` en el navegador: ejecuta 65 pruebas unitarias sobre la lógica
+(carrito, autenticación, checkout, catálogo, favoritos y prueba de usabilidad) con almacenamiento en memoria.
 
 Los elementos clave de la interfaz tienen atributos `data-testid` para automatizar pruebas
 (Selenium, Playwright, Cypress).
 
-## Publicar en GitHub Pages (necesario para Maze)
+## Prueba de usabilidad (alternativa a Maze)
+
+Maze cobra por probar sitios web en vivo, así que la app incluye su propia prueba no moderada con la misma metodología:
+
+1. Comparte con cada participante **https://diegoaaron.github.io/calidadProyecto/app/usabilidad.html**.
+2. El participante acepta las condiciones y un panel le guía por 5 tareas (buscar, filtrar, agregar, aplicar cupón y comprar).
+   El éxito se detecta automáticamente y se registran tiempo, clics, clics errados y páginas visitadas.
+   Tras cada tarea califica su facilidad (SEQ, 1–7) y al final responde el cuestionario SUS.
+3. El participante descarga su archivo `usabilidad-*.json` (o copia el texto) y te lo envía.
+4. En `app/usabilidad-resultados.html` cargas los archivos: muestra tasa de éxito, tiempos, clics errados, SEQ y SUS
+   frente a las metas del Plan de Calidad (éxito ≥ 80 %, SUS ≥ 68, mínimo 5 participantes) y exporta CSV.
+
+No se registran datos personales: solo un alias opcional, el tamaño de pantalla y las acciones dentro de la tienda.
+
+## Publicar en GitHub Pages
 
 Publicada en: **https://diegoaaron.github.io/calidadProyecto/** (la raíz redirige a `app/`).
 Pasos usados para publicarla:
@@ -82,7 +98,7 @@ Pasos usados para publicarla:
 3. En GitHub: **Settings → Pages → Build and deployment → Source: Deploy from a branch**,
    rama `main`, carpeta `/ (root)` → **Save**.
 4. En 1–2 minutos la app estará en `https://<tu-usuario>.github.io/techstore-calidad/`
-   (la raíz redirige a `app/`). Esa URL es la que se usa en Maze (*Website testing*).
+   (la raíz redirige a `app/`).
 
 > Los archivos de referencia del curso (`.pptx` y modelos `.docx` de la raíz) están en `.gitignore`
 > para no publicarlos. Si quieres subirlos, quita esas líneas.

@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TechStore | Prueba de usabilidad</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-page="usabilidad">
+  <header id="site-header" class="site-header"></header>
+
+  <main>
+    <div class="narrow" style="max-width:720px">
+      <h1>Prueba de usabilidad</h1>
+      <div id="content"></div>
+    </div>
+  </main>
+
+  <footer id="site-footer" class="site-footer"></footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/catalog.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/usability.js"></script>
+  <script>
+    UI.init({ active: 'usabilidad' });
+    var c = document.getElementById('content');
+
+    function device() {
+      return { width: window.innerWidth, height: window.innerHeight,
+        touch: ('ontouchstart' in window) || navigator.maxTouchPoints > 0, userAgent: navigator.userAgent };
+    }
+
+    function renderIntro() {
+      c.innerHTML =
+        '<div class="card">' +
+          '<p>Gracias por ayudarnos a evaluar <strong>TechStore</strong>, una tienda web creada para el curso de Calidad de Software. ' +
+          'La prueba dura unos <strong>10 minutos</strong>.</p>' +
+          '<ol>' +
+            '<li>Realizarás <strong>' + Usability.TASKS.length + ' tareas</strong> cortas en la tienda (buscar, comparar, comprar…). ' +
+              'Un panel en la parte inferior te indicará cada una.</li>' +
+            '<li>Después de cada tarea dirás qué tan fácil te resultó (del 1 al 7).</li>' +
+            '<li>Al final responderás un cuestionario de 10 afirmaciones y descargarás tus resultados para enviarlos.</li>' +
+          '</ol>' +
+          '<div class="alert alert-info">Evaluamos la tienda, no a ti. Si una tarea no te sale, puedes pasar a la siguiente: ' +
+          'eso también nos ayuda a encontrar problemas. No se hacen compras ni pagos reales.</div>' +
+          '<form id="start-form" novalidate>' +
+            '<div class="field"><label for="alias">Alias (opcional)</label>' +
+              '<input id="alias" name="alias" maxlength="40" placeholder="Ej.: Participante de Lima" data-testid="usab-alias">' +
+              '<div class="field-hint">No escribas tu nombre completo ni datos personales.</div></div>' +
+            '<label class="checkbox"><input type="checkbox" name="consent" data-testid="usab-consent"> ' +
+              '<span>Acepto participar. Entiendo que se registran solo mis acciones en la tienda (clics, páginas, tiempos), ' +
+              'el tamaño de mi pantalla y mis respuestas, sin datos personales, y que yo decido si envío el archivo de resultados.</span></label>' +
+            '<div class="field-error" data-error-for="consent"></div>' +
+            '<p class="small muted">Al empezar se restablecen los datos de demostración de la tienda en este navegador (carrito, pedidos y cuentas de prueba).</p>' +
+            '<button type="submit" class="btn btn-primary" data-testid="usab-start">Comenzar la prueba</button>' +
+          '</form>' +
+        '</div>';
+      document.getElementById('start-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var r = Usability.start({ alias: this.alias.value, consent: this.consent.checked, device: device() });
+        if (!r.ok) { UI.showErrors(this, { consent: r.error }); return; }
+        window.location.href = 'index.html';
+      });
+    }
+
+    function renderInProgress() {
+      var t = Usability.currentTask();
+      c.innerHTML = '<div class="card"><p>Tienes una prueba en curso (tarea ' + (t.index + 1) + ' de ' + t.total + ').</p>' +
+        '<div class="step-actions"><a class="btn btn-primary" href="index.html" data-testid="usab-continue">Continuar la prueba</a>' +
+        '<button type="button" class="btn btn-danger" id="restart" data-testid="usab-restart">Empezar de nuevo</button></div></div>';
+      document.getElementById('restart').addEventListener('click', function () {
+        if (confirm('Se perderá el avance de la prueba actual. ¿Continuar?')) { Usability.clear(); render(); }
+      });
+    }
+
+    function renderSus() {
+      var opts = ['Totalmente en desacuerdo', 'En desacuerdo', 'Neutral', 'De acuerdo', 'Totalmente de acuerdo'];
+      c.innerHTML = '<div class="card"><h2 style="margin-top:0">Último paso: tu opinión</h2>' +
+        '<p class="muted">Indica qué tan de acuerdo estás con cada afirmación sobre la tienda que acabas de usar. ' +
+        'Responde con tu primera impresión.</p>' +
+        '<form id="sus-form" novalidate>' +
+          Usability.SUS_QUESTIONS.map(function (q, i) {
+            return '<fieldset class="sus-item" style="border:0;margin:0"><p>' + (i + 1) + '. ' + UI.esc(q) + '</p>' +
+              '<div class="sus-scale">' + opts.map(function (o, j) {
+                return '<label title="' + o + '"><input type="radio" name="q' + i + '" value="' + (j + 1) + '" data-testid="sus-' + (i + 1) + '-' + (j + 1) + '">' +
+                  '<span>' + (j + 1) + '</span></label>';
+              }).join('') + '</div>' +
+              '<div class="usab-scale-labels small muted"><span>' + opts[0] + '</span><span>' + opts[4] + '</span></div></fieldset>';
+          }).join('') +
+          '<div class="field" style="margin-top:14px"><label for="comment">¿Algo que quieras comentar? (opcional)</label>' +
+            '<textarea id="comment" name="comment" rows="3" maxlength="1000" data-testid="usab-comment"></textarea></div>' +
+          '<div class="field-error" id="sus-error" data-testid="sus-error"></div>' +
+          '<button type="submit" class="btn btn-primary" data-testid="sus-submit">Enviar respuestas</button>' +
+        '</form></div>';
+      document.getElementById('sus-form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var answers = [];
+        for (var i = 0; i < 10; i++) {
+          var sel = this.querySelector('input[name="q' + i + '"]:checked');
+          answers.push(sel ? Number(sel.value) : null);
+        }
+        var r = Usability.submitSus(answers, this.comment.value);
+        if (!r.ok) {
+          var missing = answers.map(function (a, i) { return a ? null : i + 1; }).filter(Boolean);
+          document.getElementById('sus-error').textContent = r.error + (missing.length ? ' Faltan: ' + missing.join(', ') + '.' : '');
+          return;
+        }
+        render();
+      });
+    }
+
+    function renderDone() {
+      var r = Usability.result();
+      var json = JSON.stringify(r);
+      var ok = r.tasks.filter(function (t) { return t.status === 'exito'; }).length;
+      c.innerHTML = '<div class="card success-hero"><div class="icon">🎉</div><h2>¡Gracias por participar!</h2>' +
+        '<p>Completaste ' + ok + ' de ' + r.tasks.length + ' tareas. Tu código de participante es <strong data-testid="usab-id">' + UI.esc(r.id) + '</strong>.</p></div>' +
+        '<div class="card" style="margin-top:16px"><h2 style="margin-top:0">Envía tus resultados</h2>' +
+          '<p>Descarga el archivo y envíalo a quien te invitó a la prueba (por correo o WhatsApp). ' +
+          'Si no puedes descargarlo, copia el texto y pégalo en un mensaje.</p>' +
+          '<div class="step-actions" style="justify-content:flex-start">' +
+            '<button type="button" class="btn btn-primary" id="download" data-testid="usab-download">Descargar resultados</button>' +
+            '<button type="button" class="btn btn-outline" id="copy" data-testid="usab-copy">Copiar texto</button></div>' +
+          '<label class="sr-only" for="result-json">Resultados en texto</label>' +
+          '<textarea id="result-json" rows="4" readonly style="margin-top:12px;font-family:monospace;font-size:.8rem" data-testid="usab-json">' + UI.esc(json) + '</textarea>' +
+          '<p class="small muted">Cuando lo hayas enviado puedes borrar la prueba de este navegador.</p>' +
+          '<button type="button" class="btn btn-danger btn-small" id="finish" data-testid="usab-finish">Borrar la prueba de este navegador</button>' +
+        '</div>';
+      document.getElementById('download').addEventListener('click', function () {
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([JSON.stringify(r, null, 2)], { type: 'application/json' }));
+        a.download = 'usabilidad-' + r.id + '.json';
+        document.body.appendChild(a); a.click(); a.remove();
+      });
+      document.getElementById('copy').addEventListener('click', function () {
+        var ta = document.getElementById('result-json');
+        ta.select();
+        var done = function () { UI.toast('Resultados copiados.', 'success'); };
+        if (navigator.clipboard) navigator.clipboard.writeText(json).then(done, function () { document.execCommand('copy'); done(); });
+        else { document.execCommand('copy'); done(); }
+      });
+      document.getElementById('finish').addEventListener('click', function () {
+        if (confirm('¿Ya enviaste tus resultados? Se borrarán de este navegador.')) { Usability.clear(); Store.reset(); render(); }
+      });
+    }
+
+    function render() {
+      var s = Usability.session();
+      if (!s) renderIntro();
+      else if (s.phase === 'tasks') renderInProgress();
+      else if (s.phase === 'sus') renderSus();
+      else renderDone();
+    }
+    render();
+  </script>
+</body>
+</html>

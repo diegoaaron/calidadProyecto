@@ -23,12 +23,15 @@ app/                  Aplicación (publicada en https://diegoaaron.github.io/cal
   js/checkout.js      Validación de tarjeta (Luhn), creación de pedidos, historial
   js/ui.js            Header/footer, toasts, errores de formulario, control de sesión por página
   js/orders-view.js   Render compartido del detalle de pedido
+  js/usability.js     Prueba de usabilidad propia (alternativa a Maze): tareas, SUS, métricas + panel flotante
+  usabilidad.html     Participante: consentimiento, cuestionario SUS y exportación de resultados (JSON)
+  usabilidad-resultados.html  Investigador: consolida los JSON (tasa de éxito, tiempos, clics errados, SEQ, SUS)
   *.html              Una página por pantalla; el script de cada página va inline al final
   tests/tests.html    Pruebas unitarias en navegador (mini-framework propio)
 docs/                 Entregables del curso (.docx)
 ```
 
-Orden de carga de scripts en cada página: `data → store → auth → cart → catalog → [checkout] → ui → [orders-view]`.
+Orden de carga de scripts en cada página: `data → store → auth → cart → catalog → [checkout] → ui → [orders-view] → usability`.
 
 ## Convenciones
 
@@ -69,7 +72,7 @@ los IDs del informe de historias: **HU01–HU30, RF01–RF30 (1:1 con las HU), R
 | Entregable | Estado |
 |---|---|
 | Informe de Historias de Usuario (`docs/Informe_Historias_de_Usuario.docx`) | Hecho |
-| Análisis de usabilidad con Maze (URL: https://diegoaaron.github.io/calidadProyecto/) | Pendiente |
+| Análisis de usabilidad (herramienta propia en lugar de Maze, que es de pago: `app/usabilidad.html`) | Herramienta lista; falta recolectar ≥ 5 participantes y redactar el informe |
 | Esquema breve de Plan de Calidad, Plan de Pruebas y Conformidad (`docs/Esquema_Calidad_Pruebas_Conformidad.docx`) | Hecho (v1.0, .docx y .pptx) |
 | Plan de Pruebas (`docs/Plan_de_Pruebas.docx`) | Hecho (v1.0: diseño de 84 CP + 12 CNF; ejecución pendiente) |
 | Plan de Calidad (`docs/Plan_de_Calidad.docx`) | Hecho (v1.0 con línea base medida el 09/10/2026; 4 métricas pendientes: RF, Maze ×2, MTTR) |

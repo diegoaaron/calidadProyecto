@@ -21,7 +21,7 @@
 </head>
 <body>
   <h1>Pruebas unitarias – TechStore</h1>
-  <p>Se ejecutan sobre la lógica de negocio (<code>cart.js</code>, <code>auth.js</code>, <code>checkout.js</code>, <code>catalog.js</code>) usando un almacenamiento en memoria, sin afectar los datos de la tienda.</p>
+  <p>Se ejecutan sobre la lógica de negocio (<code>cart.js</code>, <code>auth.js</code>, <code>checkout.js</code>, <code>catalog.js</code>, <code>usability.js</code>) usando un almacenamiento en memoria, sin afectar los datos de la tienda.</p>
   <div id="summary" class="summary"></div>
   <div id="results"></div>
 
@@ -31,6 +31,7 @@
   <script src="../js/cart.js"></script>
   <script src="../js/catalog.js"></script>
   <script src="../js/checkout.js"></script>
+  <script src="../js/usability.js"></script>
   <script>
     // ---- Mini framework de pruebas ----
     var suites = [], current = null;
@@ -203,6 +204,111 @@
       it('agrega y quita favoritos', function () {
         fresh(); loginDemo(); expect(Catalog.toggleFavorite('P001').added).toBe(true); expect(Catalog.isFavorite('P001')).toBe(true);
         expect(Catalog.toggleFavorite('P001').added).toBe(false); expect(Catalog.getWishlist().length).toBe(0);
+      });
+    });
+
+    // ---- Prueba de usabilidad ----
+    function startUsab() { fresh(); return Usability.start({ alias: 'Prueba', consent: true, device: { width: 375 } }); }
+    function doTask(page, params) { Usability.beginTask(page); return Usability.evaluate({ page: page, params: params || {} }); }
+    // Recorre las 5 tareas: éxito en las indicadas y abandono en el resto; devuelve el resultado exportado
+    function runUsab(successIds, sus) {
+      startUsab();
+      Usability.TASKS.forEach(function (t) {
+        Usability.beginTask('index.html');
+        if (successIds.indexOf(t.id) !== -1) Usability.evaluate({ page: 'producto.html', params: { id: t.id === 'T1' ? 'P012' : 'P007' } });
+        if (Usability.currentTask().step === 'doing') {
+          if (successIds.indexOf(t.id) !== -1) throw new Error('No se pudo completar ' + t.id);
+          Usability.abandon();
+        }
+        Usability.rateTask(5);
+      });
+      Usability.submitSus(sus || [4, 2, 4, 2, 4, 2, 4, 2, 4, 2]);
+      return Usability.result();
+    }
+    describe('Prueba de usabilidad (alternativa a Maze)', function () {
+      it('exige consentimiento para iniciar', function () {
+        fresh(); var r = Usability.start({ consent: false });
+        expect(r.ok).toBe(false); expect(r.error).toContain('aceptar'); expect(Usability.active()).toBe(false);
+      });
+      it('inicia con 5 tareas, datos de demo limpios y alias por defecto', function () {
+        fresh(); Cart.add('P001', 1);
+        var r = Usability.start({ consent: true });
+        expect(r.ok).toBe(true); expect(r.session.tasks.length).toBe(5); expect(r.session.alias).toBe('Anónimo');
+        expect(Cart.count()).toBe(0); expect(Usability.currentTask().step).toBe('brief');
+      });
+      it('T1 se completa al abrir el detalle del producto pedido, no otro', function () {
+        startUsab(); Usability.beginTask('index.html');
+        expect(Usability.evaluate({ page: 'producto.html', params: { id: 'P013' } }).completed).toBe(false);
+        expect(Usability.evaluate({ page: 'producto.html', params: { id: 'P012' } }).completed).toBe(true);
+        var t = Usability.currentTask(); expect(t.rec.status).toBe('exito'); expect(t.step).toBe('seq');
+        expect(t.rec.timeMs >= 0).toBe(true);
+      });
+      it('no evalúa la tarea antes de que el participante la empiece', function () {
+        startUsab(); expect(Usability.evaluate({ page: 'producto.html', params: { id: 'P012' } }).completed).toBe(false);
+        expect(Usability.currentTask().step).toBe('brief');
+      });
+      it('cuenta clics y clics errados solo mientras la tarea está en curso', function () {
+        startUsab(); Usability.recordClick(true);
+        Usability.beginTask('index.html'); Usability.recordClick(false); Usability.recordClick(true); Usability.recordPage('producto.html');
+        var rec = Usability.currentTask().rec;
+        expect(rec.clicks).toBe(2); expect(rec.misclicks).toBe(1); expect(rec.pages).toEqual(['index.html', 'producto.html']);
+      });
+      it('la facilidad (SEQ) acepta solo enteros de 1 a 7 y avanza a la siguiente tarea', function () {
+        startUsab(); doTask('producto.html', { id: 'P012' });
+        expect(Usability.rateTask(0).ok).toBe(false); expect(Usability.rateTask(8).ok).toBe(false); expect(Usability.rateTask(2.5).ok).toBe(false);
+        expect(Usability.rateTask(6).next).toBe(true); expect(Usability.currentTask().def.id).toBe('T2');
+      });
+      it('T3 y T4 se detectan con el carrito (2 × JBL Flip 6 y cupón BIENVENIDO10)', function () {
+        startUsab(); doTask('producto.html', { id: 'P012' }); Usability.rateTask(5);
+        doTask('producto.html', { id: 'P007' }); Usability.rateTask(5);
+        Usability.beginTask('producto.html'); Cart.add('P014', 1);
+        expect(Usability.evaluate({ page: 'producto.html' }).completed).toBe(false);
+        Cart.add('P014', 1); expect(Usability.evaluate({ page: 'producto.html' }).completed).toBe(true); Usability.rateTask(5);
+        Usability.beginTask('carrito.html'); Cart.applyCoupon('TECH50');
+        expect(Usability.evaluate({ page: 'carrito.html' }).completed).toBe(false);
+        Cart.applyCoupon('BIENVENIDO10'); expect(Usability.evaluate({ page: 'carrito.html' }).completed).toBe(true);
+      });
+      it('T5 exige un pedido nuevo con envío express y tarjeta', function () {
+        startUsab();
+        for (var i = 0; i < 4; i++) { Usability.beginTask('index.html'); Usability.abandon(); Usability.rateTask(4); }
+        Usability.beginTask('carrito.html'); loginDemo();
+        Cart.add('P015', 1); Checkout.placeOrder({ address: VALID_ADDRESS, shippingMethod: 'tienda', payment: { method: 'card', card: VALID_CARD } });
+        expect(Usability.evaluate({ page: 'confirmacion.html' }).completed).toBe(false);
+        Cart.add('P015', 1); Checkout.placeOrder({ address: VALID_ADDRESS, shippingMethod: 'express', payment: { method: 'card', card: VALID_CARD } });
+        expect(Usability.evaluate({ page: 'confirmacion.html' }).completed).toBe(true);
+        expect(Usability.rateTask(7).next).toBe(false); expect(Usability.session().phase).toBe('sus');
+      });
+      it('abandonar registra la tarea como no lograda', function () {
+        startUsab(); Usability.beginTask('index.html'); var r = Usability.abandon();
+        expect(r.ok).toBe(true); expect(Usability.currentTask().rec.status).toBe('abandono');
+      });
+      it('calcula el puntaje SUS (0, 50 y 100) y su nivel', function () {
+        expect(Usability.susScore([3, 3, 3, 3, 3, 3, 3, 3, 3, 3])).toBe(50);
+        expect(Usability.susScore([5, 1, 5, 1, 5, 1, 5, 1, 5, 1])).toBe(100);
+        expect(Usability.susScore([1, 5, 1, 5, 1, 5, 1, 5, 1, 5])).toBe(0);
+        expect(Usability.susScore([3, 3, 3])).toBe(null); expect(Usability.susScore([3, 3, 3, 3, 3, 3, 3, 3, 3, 6])).toBe(null);
+        expect(Usability.susGrade(85)).toBe('Excelente'); expect(Usability.susGrade(68)).toBe('Bueno');
+        expect(Usability.susGrade(55)).toBe('Aceptable'); expect(Usability.susGrade(40)).toBe('Pobre');
+      });
+      it('exige responder las 10 afirmaciones SUS y luego exporta sin campos internos', function () {
+        startUsab();
+        for (var i = 0; i < 5; i++) { Usability.beginTask('index.html'); Usability.abandon(); Usability.rateTask(3); }
+        expect(Usability.result()).toBe(null);
+        var bad = Usability.submitSus([4, 2, 4, null, 4, 2, 4, 2, 4, 2]);
+        expect(bad.ok).toBe(false); expect(bad.error).toContain('10 afirmaciones');
+        expect(Usability.submitSus([4, 2, 4, 2, 4, 2, 4, 2, 4, 2], ' Todo bien ').score).toBe(75);
+        var r = Usability.result();
+        expect(r.comment).toBe('Todo bien'); expect(r.phase).toBe(undefined); expect(r.tasks[0].startedAt).toBe(undefined);
+        expect(Usability.active()).toBe(false);
+      });
+      it('consolida resultados: tasa de éxito, SUS y metas; ignora duplicados e inválidos', function () {
+        var a = runUsab(['T1', 'T2'], [5, 1, 5, 1, 5, 1, 5, 1, 5, 1]);
+        var b = runUsab(['T1'], [3, 3, 3, 3, 3, 3, 3, 3, 3, 3]);
+        var agg = Usability.aggregate([a, b, a, { foo: 1 }]);
+        expect(agg.overall.participants).toBe(2); expect(agg.overall.ignored).toBe(2);
+        expect(agg.tasks[0].successRate).toBe(100); expect(agg.tasks[1].successRate).toBe(50); expect(agg.tasks[2].successRate).toBe(0);
+        expect(agg.overall.successRate).toBe(30); expect(agg.overall.susMean).toBe(75);
+        expect(agg.overall.meetsSuccess).toBe(false); expect(agg.overall.meetsSus).toBe(true); expect(agg.overall.enoughParticipants).toBe(false);
       });
     });
 
