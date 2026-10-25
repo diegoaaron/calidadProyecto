@@ -78,6 +78,7 @@ los IDs del informe de historias: **HU01–HU30, RF01–RF30 (1:1 con las HU), R
 | Plan de Calidad (`docs/Plan_de_Calidad.docx`) | Hecho (v1.1: línea base del 09/10/2026 actualizada el 24/10/2026; 13/14 cumplen; MTTR = 15 días, no cumple la meta de 2) |
 | Prueba de Conformidad (`docs/Prueba_de_Conformidad.docx`) | Hecho (v1.1: CC01–CC07 cumplen; NC-01 corregida y CC06 repetido el 24/10/2026 sin observaciones) |
 | Preguntas del avance: técnicas de análisis (afinidad, Ishikawa, 5 por qués → R1–R9), HU con criterios y resumen de los 3 planes (`docs/Analisis_Requerimientos_HU_y_Planes.docx`) | Hecho (v1.1, 24/10/2026: estado final de los tres planes) |
+| Semana 11 – Evaluación con el modelo de McCall (`docs/semana_11/Evaluacion_McCall.docx` y `.pptx`; material del docente en `docs/semana_11/referencias/`) | Hecho (v1.0, 25/10/2026: 11 factores y 30 propiedades valoradas de 1 a 5; global 4,1 = 82 %, «Bueno»; operación 4,5, revisión 4,1, transición 3,3) |
 
 Carátula: usar `docs/caratula.docx` (UTP, curso, profesor, integrantes) en todos los Word, cambiando solo `TITULO` por el título del documento y `XXXX` por «TechStore». En las presentaciones, la portada lleva el logo y los mismos datos.
 
