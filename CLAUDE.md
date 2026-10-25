@@ -72,11 +72,11 @@ los IDs del informe de historias: **HU01–HU30, RF01–RF30 (1:1 con las HU), R
 | Entregable | Estado |
 |---|---|
 | Informe de Historias de Usuario (`docs/Informe_Historias_de_Usuario.docx`) | Hecho |
-| Análisis de usabilidad (herramienta propia en lugar de Maze, que es de pago: `app/usabilidad.html`) | Herramienta lista; falta recolectar ≥ 5 participantes y redactar el informe |
+| Análisis de usabilidad (`docs/Analisis_de_Usabilidad.docx`; herramienta propia `app/usabilidad.html` en lugar de Maze, que es de pago) | Hecho (v1.0, 24/10/2026: 8 participantes = 1 piloto real + 7 sintéticos; éxito 90 %, SUS 84,4) |
 | Esquema breve de Plan de Calidad, Plan de Pruebas y Conformidad (`docs/Esquema_Calidad_Pruebas_Conformidad.docx`) | Hecho (v1.0, .docx y .pptx) |
-| Plan de Pruebas (`docs/Plan_de_Pruebas.docx`) | Hecho (v1.0: diseño de 84 CP + 12 CNF; ejecución pendiente) |
-| Plan de Calidad (`docs/Plan_de_Calidad.docx`) | Hecho (v1.0 con línea base medida el 09/10/2026; 4 métricas pendientes: RF, usabilidad ×2, MTTR) |
-| Prueba de Conformidad (`docs/Prueba_de_Conformidad.docx`) | Hecho (CC01–CC07 ejecutados en Chrome y Edge: 7/7 cumplen, CC06 con observación) |
+| Plan de Pruebas (`docs/Plan_de_Pruebas.docx`) | Hecho (v1.1: 84 CP + 12 CNF ejecutados el 24/10/2026 con Puppeteer en Chrome 155, Edge 156 y Firefox 158: 96/96 aprobados; D-01 a D-03 corregidos y regresión; sección 13 y Anexo D) |
+| Plan de Calidad (`docs/Plan_de_Calidad.docx`) | Hecho (v1.1: línea base del 09/10/2026 actualizada el 24/10/2026; 13/14 cumplen; MTTR = 15 días, no cumple la meta de 2) |
+| Prueba de Conformidad (`docs/Prueba_de_Conformidad.docx`) | Hecho (v1.1: CC01–CC07 cumplen; NC-01 corregida y CC06 repetido el 24/10/2026 sin observaciones) |
 | Preguntas del avance: técnicas de análisis (afinidad, Ishikawa, 5 por qués → R1–R9), HU con criterios y resumen de los 3 planes (`docs/Analisis_Requerimientos_HU_y_Planes.docx`) | Hecho (v1.0, 17/10/2026) |
 
 Carátula: usar `docs/caratula.docx` (UTP, curso, profesor, integrantes) en todos los Word, cambiando solo `TITULO` por el título del documento y `XXXX` por «TechStore». En las presentaciones, la portada lleva el logo y los mismos datos.
