@@ -8,7 +8,7 @@
   --primary: #2f4fd8;
   --primary-dark: #2340b8;
   --accent: #ff7a1a;
-  --success: #1e8e4e;
+  --success: #187a42; /* contraste ≥ 4.5:1 sobre blanco y sobre --success-bg (WCAG 1.4.3) */
   --success-bg: #e6f6ec;
   --warn: #9a5b00;
   --warn-bg: #fff4e0;
@@ -19,6 +19,8 @@
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; }
+/* D-03: reserva el espacio de la barra de desplazamiento para que el contenido no se corra al aparecer */
+html { scrollbar-gutter: stable; }
 body {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
   background: var(--bg); color: var(--text); line-height: 1.5; font-size: 16px;
@@ -38,6 +40,10 @@ code { background: #eef0f6; padding: 1px 5px; border-radius: 4px; font-size: .9e
 
 /* Header */
 .site-header { background: #141a2e; color: #fff; position: sticky; top: 0; z-index: 20; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
+/* Reserva la altura del encabezado mientras ui.js lo dibuja, para que el contenido no se desplace (CLS) */
+.site-header:empty { min-height: 64px; }
+@media (max-width: 800px) { .site-header:empty { min-height: 113px; } }
+@media (max-width: 414px) { .site-header:empty { min-height: 161px; } }
 .header-inner { max-width: 1200px; margin: 0 auto; padding: 10px 16px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
 .logo { color: #fff; text-decoration: none; font-weight: 800; font-size: 1.3rem; display: flex; align-items: center; gap: 8px; }
 .logo-mark { background: var(--accent); color: #141a2e; width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; }
@@ -109,6 +115,10 @@ label { font-weight: 600; font-size: .92rem; display: block; margin-bottom: 4px;
 .filters .checkbox { margin-bottom: 4px; font-size: .92rem; }
 .price-range { display: flex; gap: 8px; }
 .cat-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+/* Igual que el encabezado: reserva la fila de categorías hasta que se dibuja */
+.cat-chips:empty { min-height: 38px; }
+@media (max-width: 560px) { .cat-chips:empty { min-height: 84px; } }
+@media (max-width: 380px) { .cat-chips:empty { min-height: 130px; } }
 .chip { border: 1px solid var(--border); background: #fff; color: var(--text); padding: 6px 14px; border-radius: 20px; text-decoration: none; font-size: .92rem; cursor: pointer; font: inherit; }
 .chip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }

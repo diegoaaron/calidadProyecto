@@ -62,6 +62,7 @@ var Store = (function () {
     set('cart', { items: [], coupon: null });
     set('orders', []);
     set('wishlist', {});
+    remove('login_attempts'); // D-01: el restablecimiento también desbloquea las cuentas
     remove('session');
     set('seeded', true);
   }
