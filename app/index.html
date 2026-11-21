@@ -14,7 +14,7 @@
     <div class="cat-chips" id="cat-chips" role="group" aria-label="Categorías" data-testid="category-chips"></div>
 
     <div class="catalog">
-      <details class="card filters" id="filters" open data-testid="filters">
+      <details class="card filters" id="filters" data-testid="filters">
         <summary><h2>Filtros</h2></summary>
         <fieldset>
           <legend>Precio (S/)</legend>
@@ -36,6 +36,8 @@
         </fieldset>
         <button type="button" class="btn btn-outline btn-small btn-block" id="clear-filters" data-testid="clear-filters">Limpiar filtros</button>
       </details>
+      <!-- D-04: el panel nace cerrado y solo se abre en escritorio (columna aparte), así en móvil no hay salto de contenido (CLS) -->
+      <script>if (window.innerWidth > 900) document.getElementById('filters').open = true;</script>
 
       <section aria-labelledby="results-title">
         <div class="toolbar">
@@ -197,7 +199,6 @@
       renderChips(); renderBrands(); render();
     });
 
-    if (window.innerWidth <= 900) document.getElementById('filters').open = false;
     renderChips(); renderBrands(); render();
   </script>
 </body>
